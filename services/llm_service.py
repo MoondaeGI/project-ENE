@@ -1,8 +1,10 @@
 """LLM 서비스 (OpenAI)"""
 import logging
+import time
 from typing import Optional, List, Dict
 from openai import OpenAI
 from config import settings
+from utils.logs.logger import log_llm_request, log_llm_response
 
 logger = logging.getLogger(__name__)
 
@@ -66,19 +68,61 @@ class LLMService:
                 "content": user_message
             })
             
-            logger.info(f"[LLM] 요청 생성 - 모델: {model}, 메시지 길이: {len(user_message)}")
+            # API 엔드포인트
+            api_endpoint = "https://api.openai.com/v1/chat/completions"
+            max_tokens = 1000
+            
+            # 요청 헤더 (민감한 정보 제외)
+            request_headers = {
+                "Content-Type": "application/json"
+            }
+            if settings.openai_api_key:
+                request_headers["Authorization"] = f"Bearer {settings.openai_api_key[:10]}..."
+            
+            # LLM 요청 로깅
+            log_llm_request(
+                api_endpoint=api_endpoint,
+                model=model,
+                prompt=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                request_headers=request_headers
+            )
+            
+            # 시간 측정 시작
+            start_time = time.time()
             
             # OpenAI API 호출
             response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=1000
+                max_tokens=max_tokens
             )
+            
+            # 시간 측정 종료
+            duration = time.time() - start_time
             
             # 응답 추출
             llm_response = response.choices[0].message.content
-            logger.info(f"[LLM] 응답 생성 완료 - 길이: {len(llm_response)}")
+            
+            # 사용량 정보 추출
+            usage_info = None
+            if hasattr(response, 'usage') and response.usage:
+                usage_info = {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens
+                }
+            
+            # LLM 응답 로깅
+            log_llm_response(
+                api_endpoint=api_endpoint,
+                model=model,
+                response_content=llm_response,
+                usage_info=usage_info,
+                duration=duration
+            )
             
             return llm_response
             
@@ -86,6 +130,16 @@ class LLMService:
             error_msg = f"LLM 응답 생성 중 오류 발생: {str(e)}"
             logger.error(f"[LLM] {error_msg}")
             logger.exception(e)
+            
+            # 에러 로깅
+            api_endpoint = "https://api.openai.com/v1/chat/completions"
+            log_llm_response(
+                api_endpoint=api_endpoint,
+                model=model,
+                response_content=None,
+                error=error_msg
+            )
+            
             return f"⚠️ {error_msg}"
 
 

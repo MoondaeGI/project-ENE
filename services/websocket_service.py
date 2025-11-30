@@ -20,12 +20,8 @@ class WebSocketService:
     
     async def connect(self, websocket: WebSocket):
         """WebSocket 연결 수락"""
-        print(f"[WebSocketService] 연결 수락 시도...")
-        logger.info(f"[WebSocketService] 연결 수락 시도...")
         try:
-            print(f"[WebSocketService] websocket.accept() 호출 전...")
             await websocket.accept()
-            print(f"[WebSocketService] ✅ websocket.accept() 성공!")
             logger.info(f"[WebSocketService] 연결 수락 성공")
             
             self.active_connections.add(websocket)
@@ -34,13 +30,8 @@ class WebSocketService:
             }
             # 대화 히스토리 초기화
             self.conversation_histories[websocket] = []
-            print(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
             logger.info(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
         except Exception as e:
-            print(f"[WebSocketService] ❌ 연결 수락 실패: {str(e)}")
-            print(f"[WebSocketService] 에러 타입: {type(e).__name__}")
-            import traceback
-            print(f"[WebSocketService] 스택 트레이스:\n{traceback.format_exc()}")
             logger.error(f"[WebSocketService] 연결 수락 실패: {str(e)}")
             logger.exception(e)
             raise
@@ -75,7 +66,7 @@ class WebSocketService:
         try:
             await websocket.send_text(message)
         except Exception as e:
-            print(f"메시지 전송 오류: {e}")
+            logger.error(f"[WebSocketService] 메시지 전송 오류: {e}")
             self.disconnect(websocket)
     
     async def broadcast(self, message: str):
@@ -85,7 +76,7 @@ class WebSocketService:
             try:
                 await connection.send_text(message)
             except Exception as e:
-                print(f"브로드캐스트 오류: {e}")
+                logger.error(f"[WebSocketService] 브로드캐스트 오류: {e}")
                 disconnected.append(connection)
         
         # 연결이 끊어진 클라이언트 제거

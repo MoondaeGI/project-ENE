@@ -1,9 +1,16 @@
 """WebSocket 컨트롤러"""
 import logging
+import time
 from typing import List, Dict
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
 from services.websocket_service import websocket_service
 from services.llm_service import llm_service
+from utils.logs.logger import (
+    log_websocket_connect,
+    log_websocket_message,
+    log_websocket_response,
+    log_websocket_disconnect
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -12,17 +19,21 @@ logger = logging.getLogger(__name__)
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket 연결 엔드포인트"""
-    # 연결 시도 로그 (print로 즉시 출력)
     origin = websocket.headers.get("origin", "없음")
     client_host = websocket.client.host if websocket.client else "Unknown"
-    path = websocket.url.path
     
     try:
         await websocket_service.connect(websocket)
-        logger.info(f"[WebSocket] 연결 성공 - Origin: {origin}, Client: {client_host}")
+        
+        # WebSocket 연결 로깅
+        log_websocket_connect(
+            client_host=client_host,
+            origin=origin,
+            connection_count=websocket_service.get_connection_count()
+        )
     except Exception as e:
         logger.error(f"[WebSocket] 연결 실패 - Origin: {origin}, Client: {client_host}, Error: {str(e)}")
-        logger.exception(e)  # 전체 스택 트레이스
+        logger.exception(e)
         raise
     
     try:
@@ -35,7 +46,15 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # 클라이언트로부터 메시지 수신
             user_message = await websocket.receive_text()
-            logger.info(f"[WebSocket] 사용자 메시지 수신: {user_message[:50]}...")
+            
+            # 시간 측정 시작
+            start_time = time.time()
+            
+            # WebSocket 메시지 수신 로깅
+            log_websocket_message(
+                message_content=user_message,
+                client_host=client_host
+            )
             
             # 대화 히스토리 가져오기
             conversation_history = websocket_service.get_conversation_history(websocket)
@@ -62,13 +81,34 @@ async def websocket_endpoint(websocket: WebSocket):
             # LLM 응답 전송
             await websocket_service.send_personal_message(llm_response, websocket)
             
+            # 시간 측정 종료
+            duration = time.time() - start_time
+            
+            # WebSocket 응답 전송 로깅
+            log_websocket_response(
+                response=llm_response,
+                client_host=client_host,
+                duration=duration
+            )
+            
     except WebSocketDisconnect:
         websocket_service.disconnect(websocket)
-        logger.info(f"[WebSocket] 클라이언트 연결이 끊어졌습니다. 현재 연결 수: {websocket_service.get_connection_count()}")
+        
+        # WebSocket 연결 해제 로깅
+        log_websocket_disconnect(
+            client_host=client_host,
+            connection_count=websocket_service.get_connection_count()
+        )
     except Exception as e:
         logger.error(f"[WebSocket] 오류 발생: {str(e)}")
         logger.exception(e)
         websocket_service.disconnect(websocket)
+        
+        # WebSocket 연결 해제 로깅
+        log_websocket_disconnect(
+            client_host=client_host,
+            connection_count=websocket_service.get_connection_count()
+        )
 
 
 @router.websocket("/ws/{client_id}")
@@ -77,11 +117,15 @@ async def websocket_with_id(websocket: WebSocket, client_id: str):
     origin = websocket.headers.get("origin", "없음")
     client_host = websocket.client.host if websocket.client else "Unknown"
     
-    logger.info(f"[WebSocket] 연결 시도 (ID: {client_id}) - Origin: {origin}, Client: {client_host}")
-    
     try:
         await websocket_service.connect(websocket)
-        logger.info(f"[WebSocket] 연결 성공 (ID: {client_id})")
+        
+        # WebSocket 연결 로깅
+        log_websocket_connect(
+            client_host=client_host,
+            origin=origin,
+            connection_count=websocket_service.get_connection_count()
+        )
     except Exception as e:
         logger.error(f"[WebSocket] 연결 실패 (ID: {client_id}) - Error: {str(e)}")
         logger.exception(e)
@@ -95,14 +139,45 @@ async def websocket_with_id(websocket: WebSocket, client_id: str):
         
         while True:
             data = await websocket.receive_text()
+            
+            # 시간 측정 시작
+            start_time = time.time()
+            
+            # WebSocket 메시지 수신 로깅
+            log_websocket_message(
+                message_content=data,
+                client_host=client_host
+            )
+            
             response = f"[{client_id}] 서버 응답: {data}"
             await websocket_service.send_personal_message(response, websocket)
             
+            # 시간 측정 종료
+            duration = time.time() - start_time
+            
+            # WebSocket 응답 전송 로깅
+            log_websocket_response(
+                response=response,
+                client_host=client_host,
+                duration=duration
+            )
+            
     except WebSocketDisconnect:
         websocket_service.disconnect(websocket)
-        logger.info(f"[WebSocket] 클라이언트 {client_id} 연결이 끊어졌습니다.")
+        
+        # WebSocket 연결 해제 로깅
+        log_websocket_disconnect(
+            client_host=client_host,
+            connection_count=websocket_service.get_connection_count()
+        )
     except Exception as e:
         logger.error(f"[WebSocket] 오류 발생 (ID: {client_id}): {str(e)}")
         logger.exception(e)
         websocket_service.disconnect(websocket)
+        
+        # WebSocket 연결 해제 로깅
+        log_websocket_disconnect(
+            client_host=client_host,
+            connection_count=websocket_service.get_connection_count()
+        )
 
