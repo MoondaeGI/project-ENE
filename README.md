@@ -28,9 +28,14 @@ FastAPI를 사용한 MVC 패턴 기반 REST API 서버 (WebSocket 지원)
 │   └── websocket_service.py
 ├── routes/              # 라우터 정의
 │   └── __init__.py
+├── middleware/          # 미들웨어
+│   ├── __init__.py
+│   ├── cors_middleware.py
+│   ├── websocket_middleware.py
+│   ├── auth_middleware.py
+│   └── logging_middleware.py
 ├── config/              # 설정
 │   └── __init__.py
-├── main.py              # 애플리케이션 진입점
 ├── requirements.txt
 └── README.md
 ```
@@ -111,6 +116,21 @@ ws.onclose = () => {
 - **Controllers**: API 엔드포인트 정의 (FastAPI 라우터)
 - **Services**: 비즈니스 로직 처리
 - **Routes**: 라우터 통합 및 등록
+- **Middleware**: 요청/응답 처리 미들웨어
+  - **CORS**: Cross-Origin Resource Sharing 설정
+  - **WebSocket Origin**: WebSocket 연결 Origin 검증
+  - **Auth**: 인증 미들웨어 (추후 확장용)
+  - **Logging**: 요청/응답 로깅
+
+## 미들웨어
+
+미들웨어는 `app/main.py`에서 등록되며, 등록 순서에 따라 실행됩니다:
+
+1. **로깅 미들웨어**: 모든 요청/응답 로깅 (디버그 모드)
+2. **CORS 미들웨어**: Cross-Origin 요청 허용
+3. **인증 미들웨어**: JWT 토큰 검증 등 (필요 시 활성화)
+
+WebSocket Origin 검증은 각 WebSocket 엔드포인트에서 자동으로 수행됩니다.
 
 이 구조를 따라 새로운 API를 추가할 수 있습니다.
 
