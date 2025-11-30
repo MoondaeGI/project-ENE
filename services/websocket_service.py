@@ -22,7 +22,6 @@ class WebSocketService:
         """WebSocket 연결 수락"""
         try:
             await websocket.accept()
-            logger.info(f"[WebSocketService] 연결 수락 성공")
             
             self.active_connections.add(websocket)
             self.client_connections[websocket] = {
@@ -30,7 +29,6 @@ class WebSocketService:
             }
             # 대화 히스토리 초기화
             self.conversation_histories[websocket] = []
-            logger.info(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
         except Exception as e:
             logger.error(f"[WebSocketService] 연결 수락 실패: {str(e)}")
             logger.exception(e)

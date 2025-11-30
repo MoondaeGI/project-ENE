@@ -15,12 +15,10 @@ class LLMService:
     def __init__(self):
         """LLM 서비스 초기화"""
         if not settings.openai_api_key:
-            logger.warning("OpenAI API 키가 설정되지 않았습니다.")
             self.client = None
         else:
             try:
                 self.client = OpenAI(api_key=settings.openai_api_key)
-                logger.info("OpenAI LLM 서비스 초기화 완료")
             except Exception as e:
                 logger.error(f"OpenAI 클라이언트 초기화 실패: {e}")
                 logger.exception(e)

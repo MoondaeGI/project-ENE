@@ -40,14 +40,12 @@ def get_settings() -> Settings:
     global _settings
     if _settings is None:
         _settings = Settings()
-        logger.info("Settings 로드 및 검증 완료")
     return _settings
 
 
 def validate_settings() -> Settings:
     """Settings를 로드하고 검증합니다. 서버 시작 시 가장 먼저 호출되어야 합니다."""
     settings = get_settings()
-    logger.info(f"Settings 검증 완료 - App: {settings.app_name}, Port: {settings.server_port}, Debug: {settings.debug}")
     return settings
 
 

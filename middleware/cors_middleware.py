@@ -16,8 +16,6 @@ def setup_cors(app: FastAPI) -> None:
     # 환경 변수에서 허용할 Origin 목록을 가져올 수 있음
     # allow_origins = settings.allowed_origins.split(",") if hasattr(settings, 'allowed_origins') else ["*"]
     
-    logger.info(f"[CORS] CORS 미들웨어 설정 - 허용 Origin: {allow_origins}")
-    
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
