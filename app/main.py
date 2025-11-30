@@ -1,20 +1,47 @@
 """FastAPI 애플리케이션 메인 파일"""
 import logging
 from fastapi import FastAPI
-from routes import api_router
-from controllers.websocket_controller import router as websocket_router
-from middleware.cors_middleware import setup_cors
-from middleware.logging_middleware import LoggingMiddleware
-from config import settings
 
-# 로깅 설정
+# 1단계: 로깅 설정 먼저 (최소한의 로깅만 설정)
 logging.basicConfig(
-    level=logging.DEBUG if settings.debug else logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
 logger = logging.getLogger(__name__)
+
+# 2단계: Settings를 가장 먼저 로드하고 검증
+try:
+    from config import validate_settings, settings
+    
+    # Settings 검증 (이 시점에 .env 파일을 읽고 모든 설정이 준비됨)
+    validate_settings()
+    logger.info("=" * 60)
+    logger.info("Settings 초기화 및 검증 완료")
+    logger.info("=" * 60)
+    
+    # settings 로드 후 로깅 레벨 조정
+    logging.getLogger().setLevel(logging.DEBUG if settings.debug else logging.INFO)
+except Exception as e:
+    logger.error(f"Settings 로드 실패: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    raise
+
+# 3단계: Settings가 준비된 후 나머지 모듈들 로드
+try:
+    from routes import api_router
+    from controllers.websocket_controller import router as websocket_router
+    from middleware.cors_middleware import setup_cors
+    from middleware.logging_middleware import LoggingMiddleware
+    
+    logger.info("모든 모듈 로드 완료")
+except Exception as e:
+    logger.error(f"모듈 로드 실패: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    raise
 
 
 def create_app() -> FastAPI:

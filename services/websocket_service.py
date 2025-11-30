@@ -15,6 +15,8 @@ class WebSocketService:
         self.active_connections: Set[WebSocket] = set()
         # 클라이언트별 연결 관리 (추가 정보 저장 시 사용)
         self.client_connections: Dict[WebSocket, dict] = {}
+        # 클라이언트별 대화 히스토리
+        self.conversation_histories: Dict[WebSocket, list] = {}
     
     async def connect(self, websocket: WebSocket):
         """WebSocket 연결 수락"""
@@ -30,6 +32,8 @@ class WebSocketService:
             self.client_connections[websocket] = {
                 "connected_at": datetime.now()
             }
+            # 대화 히스토리 초기화
+            self.conversation_histories[websocket] = []
             print(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
             logger.info(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
         except Exception as e:
@@ -45,6 +49,26 @@ class WebSocketService:
         """WebSocket 연결 해제"""
         self.active_connections.discard(websocket)
         self.client_connections.pop(websocket, None)
+        # 대화 히스토리도 제거
+        self.conversation_histories.pop(websocket, None)
+    
+    def get_conversation_history(self, websocket: WebSocket) -> list:
+        """클라이언트의 대화 히스토리 가져오기"""
+        return self.conversation_histories.get(websocket, [])
+    
+    def add_to_conversation_history(self, websocket: WebSocket, role: str, content: str):
+        """대화 히스토리에 메시지 추가"""
+        if websocket not in self.conversation_histories:
+            self.conversation_histories[websocket] = []
+        
+        self.conversation_histories[websocket].append({
+            "role": role,
+            "content": content
+        })
+        
+        # 히스토리 길이 제한 (최근 10턴만 유지)
+        if len(self.conversation_histories[websocket]) > 20:  # 10턴 = 20개 메시지
+            self.conversation_histories[websocket] = self.conversation_histories[websocket][-20:]
     
     async def send_personal_message(self, message: str, websocket: WebSocket):
         """특정 클라이언트에게 메시지 전송"""

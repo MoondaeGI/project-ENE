@@ -1,7 +1,9 @@
 """WebSocket 컨트롤러"""
 import logging
+from typing import List, Dict
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
 from services.websocket_service import websocket_service
+from services.llm_service import llm_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -15,25 +17,10 @@ async def websocket_endpoint(websocket: WebSocket):
     client_host = websocket.client.host if websocket.client else "Unknown"
     path = websocket.url.path
     
-    print(f"[WebSocket] ========== 연결 시도 ==========")
-    print(f"[WebSocket] Path: {path}")
-    print(f"[WebSocket] Origin: {origin}")
-    print(f"[WebSocket] Client: {client_host}")
-    print(f"[WebSocket] 전체 헤더: {dict(websocket.headers)}")
-    
-    logger.info(f"[WebSocket] 연결 시도 - Path: {path}, Origin: {origin}, Client: {client_host}")
-    logger.debug(f"[WebSocket] 전체 헤더: {dict(websocket.headers)}")
-    
     try:
-        print(f"[WebSocket] 서비스 연결 시도...")
         await websocket_service.connect(websocket)
-        print(f"[WebSocket] ✅ 연결 성공!")
         logger.info(f"[WebSocket] 연결 성공 - Origin: {origin}, Client: {client_host}")
     except Exception as e:
-        print(f"[WebSocket] ❌ 연결 실패: {str(e)}")
-        print(f"[WebSocket] 에러 타입: {type(e).__name__}")
-        import traceback
-        print(f"[WebSocket] 스택 트레이스:\n{traceback.format_exc()}")
         logger.error(f"[WebSocket] 연결 실패 - Origin: {origin}, Client: {client_host}, Error: {str(e)}")
         logger.exception(e)  # 전체 스택 트레이스
         raise
@@ -41,16 +28,39 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         # 연결 확인 메시지 전송
         await websocket_service.send_personal_message(
-            "서버에 연결되었습니다!",
+            "서버에 연결되었습니다! 질문을 입력해주세요.",
             websocket
         )
         
         while True:
             # 클라이언트로부터 메시지 수신
-            data = await websocket.receive_text()
+            user_message = await websocket.receive_text()
+            logger.info(f"[WebSocket] 사용자 메시지 수신: {user_message[:50]}...")
             
-            # 에코 응답
-            await websocket_service.echo_message(websocket, data)
+            # 대화 히스토리 가져오기
+            conversation_history = websocket_service.get_conversation_history(websocket)
+            
+            # LLM 응답 생성
+            await websocket_service.send_personal_message(
+                "🤔 생각 중...",
+                websocket
+            )
+            
+            # LLM 서비스 사용 (다른 서비스들과 동일하게 직접 사용)
+            if llm_service.client is None:
+                llm_response = "⚠️ LLM 서비스가 초기화되지 않았습니다."
+            else:
+                llm_response = await llm_service.generate_response(
+                    user_message=user_message,
+                    conversation_history=conversation_history
+                )
+            
+            # 대화 히스토리에 추가
+            websocket_service.add_to_conversation_history(websocket, "user", user_message)
+            websocket_service.add_to_conversation_history(websocket, "assistant", llm_response)
+            
+            # LLM 응답 전송
+            await websocket_service.send_personal_message(llm_response, websocket)
             
     except WebSocketDisconnect:
         websocket_service.disconnect(websocket)
