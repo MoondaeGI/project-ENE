@@ -1,6 +1,10 @@
 """WebSocket 서비스"""
+import logging
 from typing import Dict, Set
+from datetime import datetime
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketService:
@@ -14,11 +18,28 @@ class WebSocketService:
     
     async def connect(self, websocket: WebSocket):
         """WebSocket 연결 수락"""
-        await websocket.accept()
-        self.active_connections.add(websocket)
-        self.client_connections[websocket] = {
-            "connected_at": None
-        }
+        print(f"[WebSocketService] 연결 수락 시도...")
+        logger.info(f"[WebSocketService] 연결 수락 시도...")
+        try:
+            print(f"[WebSocketService] websocket.accept() 호출 전...")
+            await websocket.accept()
+            print(f"[WebSocketService] ✅ websocket.accept() 성공!")
+            logger.info(f"[WebSocketService] 연결 수락 성공")
+            
+            self.active_connections.add(websocket)
+            self.client_connections[websocket] = {
+                "connected_at": datetime.now()
+            }
+            print(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
+            logger.info(f"[WebSocketService] 현재 활성 연결 수: {len(self.active_connections)}")
+        except Exception as e:
+            print(f"[WebSocketService] ❌ 연결 수락 실패: {str(e)}")
+            print(f"[WebSocketService] 에러 타입: {type(e).__name__}")
+            import traceback
+            print(f"[WebSocketService] 스택 트레이스:\n{traceback.format_exc()}")
+            logger.error(f"[WebSocketService] 연결 수락 실패: {str(e)}")
+            logger.exception(e)
+            raise
     
     def disconnect(self, websocket: WebSocket):
         """WebSocket 연결 해제"""

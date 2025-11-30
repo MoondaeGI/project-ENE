@@ -15,11 +15,24 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         """요청 처리 전후 로깅"""
         start_time = time.time()
         
+        # WebSocket 업그레이드 요청 체크
+        is_websocket = request.headers.get("upgrade", "").lower() == "websocket"
+        origin = request.headers.get("origin", "없음")
+        
         # 요청 로깅
-        logger.info(
+        log_msg = (
             f"요청: {request.method} {request.url.path} - "
             f"Client: {request.client.host if request.client else 'Unknown'}"
         )
+        
+        if is_websocket:
+            log_msg += f" - [WebSocket] Origin: {origin}"
+            print(f"[로깅 미들웨어] {log_msg}")
+            logger.info(log_msg)
+            print(f"[로깅 미들웨어] [WebSocket 업그레이드 요청] 전체 헤더: {dict(request.headers)}")
+            logger.debug(f"[WebSocket 업그레이드 요청] 전체 헤더: {dict(request.headers)}")
+        else:
+            logger.info(log_msg)
         
         try:
             response = await call_next(request)

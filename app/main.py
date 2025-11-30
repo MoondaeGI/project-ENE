@@ -1,10 +1,20 @@
 """FastAPI 애플리케이션 메인 파일"""
+import logging
 from fastapi import FastAPI
 from routes import api_router
 from controllers.websocket_controller import router as websocket_router
 from middleware.cors_middleware import setup_cors
 from middleware.logging_middleware import LoggingMiddleware
 from config import settings
+
+# 로깅 설정
+logging.basicConfig(
+    level=logging.DEBUG if settings.debug else logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
