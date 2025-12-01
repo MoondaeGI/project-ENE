@@ -1,21 +1,26 @@
 """FastAPI 애플리케이션 메인 파일"""
 import logging
 import sys
+import os
 from fastapi import FastAPI
 from utils.logs.formatter import ColoredFormatter
 from utils.logs.ascii_art import print_startup_banner
 
-# 서버 시작 배너 출력
-print_startup_banner()
+# 배너는 한 번만 출력 (reload 시 중복 출력 방지)
+if not os.environ.get("UVICORN_RELOAD"):
+    print_startup_banner()
 
 # 1단계: 로깅 설정 먼저 (FastAPI/uvicorn 기본 형식 유지 + 색상)
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(ColoredFormatter('%(levelname)s:     %(message)s'))
-
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[handler]
-)
+# reload 모드에서 중복 설정 방지
+if not logging.getLogger().handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(ColoredFormatter('%(levelname)s:     %(message)s'))
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[handler],
+        force=False
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -124,10 +129,14 @@ if __name__ == "__main__":
     import uvicorn
     from config import settings
     
+    # reload 모드 설정 (개발 환경에서만)
+    reload_enabled = settings.debug if hasattr(settings, 'debug') else True
+    
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=settings.server_port,
-        reload=True
+        reload=reload_enabled,
+        reload_dirs=["app", "controllers", "services", "middleware", "routes"] if reload_enabled else None
     )
 
