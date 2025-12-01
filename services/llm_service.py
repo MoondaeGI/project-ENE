@@ -5,6 +5,7 @@ from typing import Optional, List, Dict
 from openai import OpenAI
 from config import settings
 from utils.logs.logger import log_llm_request, log_llm_response
+from prompts.prompt_loader import get_system_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +51,11 @@ class LLMService:
             # 대화 히스토리 구성
             messages = []
             
-            # 시스템 프롬프트 (선택적)
+            # 시스템 프롬프트 (파일에서 읽어옴)
+            system_prompt = get_system_prompt()
             messages.append({
                 "role": "system",
-                "content": "당신은 친절하고 도움이 되는 AI 어시스턴트입니다. 사용자의 질문에 명확하고 정확하게 답변해주세요."
+                "content": system_prompt
             })
             
             # 대화 히스토리 추가
