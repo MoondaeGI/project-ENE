@@ -1,15 +1,10 @@
-"""인증 미들웨어 (추후 확장용)"""
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from typing import Callable
 
 
-class AuthMiddleware(BaseHTTPMiddleware):
-    """인증 미들웨어 - 추후 JWT 토큰 검증 등에 사용"""
-    
+class AuthMiddleware(BaseHTTPMiddleware): 
     async def dispatch(self, request: Request, call_next: Callable):
-        """요청 처리 전 인증 검증"""
-        
         # 공개 경로는 인증 검증 제외
         public_paths = ["/", "/docs", "/openapi.json", "/redoc", "/api/v1/health"]
         if request.url.path in public_paths:

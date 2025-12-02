@@ -67,6 +67,7 @@ except Exception as e:
 try:
     from middleware.cors_middleware import setup_cors
     from middleware.logging_middleware import LoggingMiddleware
+    from middleware.error_middleware import setup_error_handlers
 except Exception as e:
     logger.error(f"✗ Middleware loading failed: {e}")
     import traceback
@@ -99,6 +100,9 @@ def create_app() -> FastAPI:
     
     # WebSocket 라우터 등록
     app.include_router(websocket_router)
+    
+    # Exception Handler 등록 (가장 마지막 - 에러를 응답으로 변환)
+    setup_error_handlers(app)
     
     @app.get("/")
     async def root():

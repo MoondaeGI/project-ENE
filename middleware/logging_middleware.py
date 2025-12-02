@@ -9,11 +9,8 @@ from utils.logs.logger import log_api_request, log_api_response
 logger = logging.getLogger(__name__)
 
 
-class LoggingMiddleware(BaseHTTPMiddleware):
-    """요청/응답 로깅 미들웨어"""
-    
+class LoggingMiddleware(BaseHTTPMiddleware): 
     async def dispatch(self, request: Request, call_next: Callable):
-        """요청 처리 전후 로깅"""
         start_time = time.time()
         
         # WebSocket 업그레이드 요청 체크 (WebSocket은 별도 로거에서 처리)

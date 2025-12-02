@@ -1,5 +1,6 @@
 """설정 모듈"""
 import logging
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -22,29 +23,40 @@ class Settings(BaseSettings):
     
     # 환경 변수에서 읽어올 값들
     server_port: int = 8000
-    secret_key: str = "dev-secret-key-change-in-production"  # 기본값 추가
-    openai_api_key: str = ""
+    secret_key: str  # 필수: 환경 변수에서 주입되어야 함
+    openai_api_key: str  # 필수: 환경 변수에서 주입되어야 함
+    cors_origin: list[str]  # 필수: 쉼표로 구분된 문자열 (예: "http://localhost:3000,http://localhost:8080")
+    
+    @field_validator("cors_origin", mode="before")
+    @classmethod
+    def parse_cors_origin(cls, v: str | list[str]) -> list[str]:
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return []
     
     def model_post_init(self, __context) -> None:
-        """설정 검증 로직"""
-        # 필수 환경 변수 검증
-        if self.openai_api_key == "":
-            logger.warning("OpenAI API 키가 설정되지 않았습니다. LLM 기능이 동작하지 않을 수 있습니다.")
+        # 필수 환경 변수 검증 - 값이 없으면 예외를 던져 서버 시작 실패
+        if not self.openai_api_key:
+            raise ValueError("OPENAI_API_KEY 환경 변수가 설정되지 않았습니다. 서버를 시작할 수 없습니다.")
         
-        if self.secret_key == "dev-secret-key-change-in-production":
-            logger.warning("프로덕션 환경에서는 반드시 SECRET_KEY를 변경해주세요.")
+        if not self.secret_key:
+            raise ValueError("SECRET_KEY 환경 변수가 설정되지 않았습니다. 서버를 시작할 수 없습니다.")
+
+        if not self.cors_origin or len(self.cors_origin) == 0:
+            raise ValueError("CORS_ORIGIN 환경 변수가 설정되지 않았습니다. 서버를 시작할 수 없습니다.")
 
 
 def get_settings() -> Settings:
-    """Settings 인스턴스를 가져옵니다 (싱글톤 패턴)"""
     global _settings
+
     if _settings is None:
         _settings = Settings()
     return _settings
 
 
 def validate_settings() -> Settings:
-    """Settings를 로드하고 검증합니다. 서버 시작 시 가장 먼저 호출되어야 합니다."""
     settings = get_settings()
     return settings
 
