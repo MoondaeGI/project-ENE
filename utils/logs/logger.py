@@ -349,3 +349,17 @@ def log_llm_response(
         if response_content:
             print(f"  response: {truncate_text(response_content, 100)}")
 
+
+def log_error(message: str, exception: Exception) -> None:
+    """에러를 로깅함
+    
+    Args:
+        message: 에러 메시지 (예: "Settings validation failed")
+        exception: 발생한 예외 객체
+    """
+    import logging
+    import traceback
+    
+    logger = logging.getLogger(__name__)
+    logger.error(f"✗ {message}: {exception}")
+    logger.error(traceback.format_exc())

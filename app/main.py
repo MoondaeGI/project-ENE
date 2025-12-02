@@ -5,6 +5,7 @@ import os
 from fastapi import FastAPI
 from utils.logs.formatter import ColoredFormatter
 from utils.logs.ascii_art import print_startup_banner
+from utils.logs.logger import log_error
 
 # 배너는 한 번만 출력 (reload 시 중복 출력 방지)
 if not os.environ.get("UVICORN_RELOAD"):
@@ -26,52 +27,33 @@ logger = logging.getLogger(__name__)
 
 # 2단계: Settings를 가장 먼저 로드하고 검증
 try:
-    from config import validate_settings, settings
-    
-    # Settings 검증 (이 시점에 .env 파일을 읽고 모든 설정이 준비됨)
-    validate_settings()
+    from config import settings  # import 시 자동으로 초기화 및 검증됨
     
     # settings 로드 후 로깅 레벨 조정
     logging.getLogger().setLevel(logging.DEBUG if settings.debug else logging.INFO)
 except Exception as e:
-    logger.error(f"✗ Settings validation failed: {e}")
-    import traceback
-    logger.error(traceback.format_exc())
+    log_error("Settings validation failed", e)
     raise
 
 # 3단계: Services 초기화 검증
 try:
-    from services.llm_service import llm_service
-    from services.websocket_service import websocket_service
-    from services.health_service import HealthService
-    from services.user_service import UserService
+    from services import *
 except Exception as e:
-    logger.error(f"✗ Service initialization failed: {e}")
-    import traceback
-    logger.error(traceback.format_exc())
+    log_error("Service initialization failed", e)
     raise
 
 # 4단계: Controllers 및 Routes 초기화 검증
 try:
-    from routes import api_router
-    from controllers.websocket_controller import router as websocket_router
-    from controllers.health_controller import router as health_router
-    from controllers.user_controller import router as user_router
+    from routes import *
 except Exception as e:
-    logger.error(f"✗ Controller/Router loading failed: {e}")
-    import traceback
-    logger.error(traceback.format_exc())
+    log_error("Controller/Router loading failed", e)
     raise
 
 # 5단계: Middleware 초기화 검증
 try:
-    from middleware.cors_middleware import setup_cors
-    from middleware.logging_middleware import LoggingMiddleware
-    from middleware.error_middleware import setup_error_handlers
+    from middleware import *
 except Exception as e:
-    logger.error(f"✗ Middleware loading failed: {e}")
-    import traceback
-    logger.error(traceback.format_exc())
+    log_error("Middleware loading failed", e)
     raise
 
 

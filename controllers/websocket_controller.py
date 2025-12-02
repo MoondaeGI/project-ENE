@@ -3,8 +3,7 @@ import logging
 import time
 from typing import List, Dict
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-from services.websocket_service import websocket_service
-from services.llm_service import llm_service
+from services import websocket_service, llm_service
 from utils.logs.logger import (
     log_websocket_connect,
     log_websocket_message,

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_cors(app: FastAPI) -> None:
-    allow_origins = settings.cors_origin
+    allow_origins = settings.cors_origins
     
     app.add_middleware(
         CORSMiddleware,

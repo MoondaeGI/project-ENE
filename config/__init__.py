@@ -1,12 +1,9 @@
 """설정 모듈"""
 import logging
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
-
-# 전역 settings 인스턴스 (초기값은 None)
-_settings: "Settings | None" = None
 
 
 class Settings(BaseSettings):
@@ -22,12 +19,12 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     
     # 환경 변수에서 읽어올 값들
-    server_port: int = 8000
+    server_port: int
     secret_key: str  # 필수: 환경 변수에서 주입되어야 함
     openai_api_key: str  # 필수: 환경 변수에서 주입되어야 함
-    cors_origin: list[str]  # 필수: 쉼표로 구분된 문자열 (예: "http://localhost:3000,http://localhost:8080")
+    cors_origins: list[str]  # 필수: 쉼표로 구분된 문자열 (예: "http://localhost:3000,http://localhost:8080")
     
-    @field_validator("cors_origin", mode="before")
+    @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origin(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, list):
@@ -44,22 +41,9 @@ class Settings(BaseSettings):
         if not self.secret_key:
             raise ValueError("SECRET_KEY 환경 변수가 설정되지 않았습니다. 서버를 시작할 수 없습니다.")
 
-        if not self.cors_origin or len(self.cors_origin) == 0:
+        if not self.cors_origins or len(self.cors_origins) == 0:
             raise ValueError("CORS_ORIGIN 환경 변수가 설정되지 않았습니다. 서버를 시작할 수 없습니다.")
 
-
-def get_settings() -> Settings:
-    global _settings
-
-    if _settings is None:
-        _settings = Settings()
-    return _settings
+settings = Settings()
 
 
-def validate_settings() -> Settings:
-    settings = get_settings()
-    return settings
-
-
-# 모듈 레벨에서 기본 인스턴스 생성 (하위 호환성)
-settings = get_settings()

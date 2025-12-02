@@ -1,7 +1,7 @@
 """사용자 컨트롤러"""
 from typing import List
 from fastapi import APIRouter, HTTPException, status
-from services.user_service import UserService
+from services import UserService
 from schemas.user import UserCreate, UserUpdate, UserResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
