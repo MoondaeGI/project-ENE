@@ -55,9 +55,7 @@ except Exception as e:
     log_error("Middleware loading failed", e)
     raise
 
-
 def create_app() -> FastAPI:
-    """FastAPI 애플리케이션 생성"""
     app = FastAPI(
         title="FastAPI REST API",
         description="MVC 패턴으로 구성된 FastAPI REST API 서버 (WebSocket 지원)",
@@ -72,7 +70,7 @@ def create_app() -> FastAPI:
     setup_cors(app)
     
     # REST API 라우터 등록
-    app.include_router(api_router, prefix="/api/v1")
+    app.include_router(api_router, prefix="/api")
     
     # WebSocket 라우터 등록
     app.include_router(websocket_router)
@@ -82,7 +80,6 @@ def create_app() -> FastAPI:
     
     @app.get("/")
     async def root():
-        """루트 엔드포인트"""
         return {
             "message": "FastAPI REST API 서버입니다.",
             "version": "0.1.0",
@@ -95,7 +92,6 @@ def create_app() -> FastAPI:
 _app_instance: FastAPI | None = None
 
 def get_app() -> FastAPI:
-    """애플리케이션 인스턴스를 반환하는 함수 (싱글톤 패턴)"""
     global _app_instance
     if _app_instance is None:
         _app_instance = create_app()
