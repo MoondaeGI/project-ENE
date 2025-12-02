@@ -1,52 +1,49 @@
-"""사용자 서비스"""
 from typing import List, Optional
+from sqlalchemy.orm import Session
+from repositories import PersonRepository
+from models.person import Person
 from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 
 
 class PersonService:
-    _persons: List[dict] = []
-    _next_id: int = 1
     
-
-    @classmethod
-    def create_person(cls, person_data: PersonCreate) -> PersonResponse:
-        person_dict = {
-            "id": cls._next_id,
-            "name": person_data.name
-        }
-        cls._persons.append(person_dict)
-        cls._next_id += 1
-        return PersonResponse(**person_dict)
+    @staticmethod
+    def create_person(person_data: PersonCreate, db: Session) -> PersonResponse:
+        repo = PersonRepository(db)
+        person = Person(name=person_data.name)
+        created_person = repo.create(person)
+        db.flush()  # ID를 얻기 위해 flush만 수행 (commit은 get_db에서)
+        db.refresh(created_person)
+        return PersonResponse.model_validate(created_person)
     
-
-    @classmethod
-    def get_person(cls, person_id: int) -> Optional[PersonResponse]:
-        person = next((p for p in cls._persons if p["id"] == person_id), None)
-        return PersonResponse(**person) if person else None
-    
-
-    @classmethod
-    def get_all_persons(cls) -> List[PersonResponse]:
-        return [PersonResponse(**person) for person in cls._persons]
-    
-
-    @classmethod
-    def update_person(cls, person_id: int, person_data: PersonUpdate) -> Optional[PersonResponse]:
-        person = next((p for p in cls._persons if p["id"] == person_id), None)
+    @staticmethod
+    def get_person(person_id: int, db: Session) -> Optional[PersonResponse]:
+        repo = PersonRepository(db)
+        person = repo.get(person_id)
         if not person:
             return None
-        
+        return PersonResponse.model_validate(person)
+    
+    @staticmethod
+    def get_all_persons(db: Session) -> List[PersonResponse]:
+        repo = PersonRepository(db)
+        persons = repo.get_all()
+        return [PersonResponse.model_validate(person) for person in persons]
+    
+    @staticmethod
+    def update_person(person_id: int, person_data: PersonUpdate, db: Session) -> Optional[PersonResponse]:
+        repo = PersonRepository(db)
         update_data = person_data.model_dump(exclude_unset=True)
-        person.update(update_data)
-        return PersonResponse(**person)
+        updated_person = repo.update(person_id, **update_data)
+        if not updated_person:
+            return None
+        db.flush()  # commit은 get_db에서
+        db.refresh(updated_person)
+        return PersonResponse.model_validate(updated_person)
     
-    
-    @classmethod
-    def delete_person(cls, person_id: int) -> bool:
-        person = next((p for p in cls._persons if p["id"] == person_id), None)
-        if not person:
-            return False
-        
-        cls._persons.remove(person)
-        return True
+    @staticmethod
+    def delete_person(person_id: int, db: Session) -> bool:
+        repo = PersonRepository(db)
+        success = repo.delete(person_id)
+        return success
 
