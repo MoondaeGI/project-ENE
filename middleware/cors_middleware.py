@@ -2,13 +2,13 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import settings
 
 logger = logging.getLogger(__name__)
 
 
 def setup_cors(app: FastAPI) -> None:
-    allow_origins = settings.cors_origins
+    # 프론트엔드 도메인만 허용 
+    allow_origins = ["http://localhost:3000"]
     
     app.add_middleware(
         CORSMiddleware,

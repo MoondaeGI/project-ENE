@@ -11,8 +11,7 @@ from utils.logs.logger import log_error
 if not os.environ.get("UVICORN_RELOAD"):
     print_startup_banner()
 
-# 1단계: 로깅 설정 먼저 (FastAPI/uvicorn 기본 형식 유지 + 색상)
-# reload 모드에서 중복 설정 방지
+# 로깅 설정
 if not logging.getLogger().handlers:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(ColoredFormatter('%(levelname)s:     %(message)s'))
@@ -25,7 +24,7 @@ if not logging.getLogger().handlers:
 
 logger = logging.getLogger(__name__)
 
-# 2단계: Settings를 가장 먼저 로드하고 검증
+# settings 초기화
 try:
     from config import settings  # import 시 자동으로 초기화 및 검증됨
     
@@ -35,21 +34,21 @@ except Exception as e:
     log_error("Settings validation failed", e)
     raise
 
-# 3단계: Services 초기화 검증
+# service import
 try:
     from services import *
 except Exception as e:
     log_error("Service initialization failed", e)
     raise
 
-# 4단계: Controllers 및 Routes 초기화 검증
+# controller import
 try:
     from routes import *
 except Exception as e:
     log_error("Controller/Router loading failed", e)
     raise
 
-# 5단계: Middleware 초기화 검증
+# middleware import
 try:
     from middleware import *
 except Exception as e:
@@ -65,17 +64,12 @@ def create_app() -> FastAPI:
         version="0.1.0"
     )
     
-    # 미들웨어 등록 (라우터 등록 전에! 순서 중요)
-    # 1. 로깅 미들웨어 (가장 먼저 실행되어야 함)
+    # 미들웨어 추가
     if settings.debug:
         app.add_middleware(LoggingMiddleware)
     
-    # 2. CORS 미들웨어
+    # CORS 미들웨어 추가
     setup_cors(app)
-    
-    # 3. 인증 미들웨어는 필요 시 추가
-    # from middleware.auth_middleware import AuthMiddleware
-    # app.add_middleware(AuthMiddleware)
     
     # REST API 라우터 등록
     app.include_router(api_router, prefix="/api/v1")
@@ -83,7 +77,7 @@ def create_app() -> FastAPI:
     # WebSocket 라우터 등록
     app.include_router(websocket_router)
     
-    # Exception Handler 등록 (가장 마지막 - 에러를 응답으로 변환)
+    # Exception Handler
     setup_error_handlers(app)
     
     @app.get("/")
@@ -97,7 +91,7 @@ def create_app() -> FastAPI:
     
     return app
 
-# reload 모드에서도 안전하게 작동하도록 싱글톤 패턴 사용
+# 애플리케이션 인스턴스 싱글톤 패턴
 _app_instance: FastAPI | None = None
 
 def get_app() -> FastAPI:
@@ -125,4 +119,3 @@ if __name__ == "__main__":
         reload=reload_enabled,
         reload_dirs=["app", "controllers", "services", "middleware", "routes"] if reload_enabled else None
     )
-
