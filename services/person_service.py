@@ -8,47 +8,40 @@ class PersonService:
     _next_id: int = 1
     
     @classmethod
-    def create_user(cls, user_data: UserCreate) -> UserResponse:
-        """사용자 생성"""
-        user_dict = {
+    def create_person(cls, person_data: PersonCreate) -> PersonResponse:
+        person_dict = {
             "id": cls._next_id,
-            "name": user_data.name,
-            "email": user_data.email,
-            "age": user_data.age
+            "name": person_data.name
         }
-        cls._users.append(user_dict)
+        cls._persons.append(person_dict)
         cls._next_id += 1
-        return UserResponse(**user_dict)
+        return PersonResponse(**person_dict)
     
     @classmethod
-    def get_user(cls, user_id: int) -> Optional[UserResponse]:
-        """사용자 조회"""
-        user = next((u for u in cls._users if u["id"] == user_id), None)
-        return UserResponse(**user) if user else None
+    def get_person(cls, person_id: int) -> Optional[PersonResponse]:
+        person = next((p for p in cls._persons if p["id"] == person_id), None)
+        return PersonResponse(**person) if person else None
     
     @classmethod
-    def get_all_users(cls) -> List[UserResponse]:
-        """모든 사용자 조회"""
-        return [UserResponse(**user) for user in cls._users]
+    def get_all_persons(cls) -> List[PersonResponse]:
+        return [PersonResponse(**person) for person in cls._persons]
     
     @classmethod
-    def update_user(cls, user_id: int, user_data: UserUpdate) -> Optional[UserResponse]:
-        """사용자 업데이트"""
-        user = next((u for u in cls._users if u["id"] == user_id), None)
-        if not user:
+    def update_person(cls, person_id: int, person_data: PersonUpdate) -> Optional[PersonResponse]:
+        person = next((p for p in cls._persons if p["id"] == person_id), None)
+        if not person:
             return None
         
-        update_data = user_data.model_dump(exclude_unset=True)
-        user.update(update_data)
-        return UserResponse(**user)
+        update_data = person_data.model_dump(exclude_unset=True)
+        person.update(update_data)
+        return PersonResponse(**person)
     
     @classmethod
-    def delete_user(cls, user_id: int) -> bool:
-        """사용자 삭제"""
-        user = next((u for u in cls._users if u["id"] == user_id), None)
-        if not user:
+    def delete_person(cls, person_id: int) -> bool:
+        person = next((p for p in cls._persons if p["id"] == person_id), None)
+        if not person:
             return False
         
-        cls._users.remove(user)
+        cls._persons.remove(person)
         return True
 

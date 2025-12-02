@@ -6,7 +6,7 @@ from controllers import person_router, websocket_router
 api_router = APIRouter()
 
 # 각 컨트롤러 라우터 등록
-api_router.include_router(user_router)
+api_router.include_router(person_router)
 
 __all__ = [
     "api_router",
