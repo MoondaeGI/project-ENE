@@ -12,14 +12,16 @@ class PersonService:
         repo = PersonRepository(db)
         person = Person(name=person_data.name)
         created_person = repo.create(person)
-        db.flush()  # ID를 얻기 위해 flush만 수행 (commit은 get_db에서)
+        db.flush()  
         db.refresh(created_person)
+
         return PersonResponse.model_validate(created_person)
     
     @staticmethod
     def get_person(person_id: int, db: Session) -> Optional[PersonResponse]:
         repo = PersonRepository(db)
         person = repo.get(person_id)
+        
         if not person:
             return None
         return PersonResponse.model_validate(person)
@@ -28,6 +30,7 @@ class PersonService:
     def get_all_persons(db: Session) -> List[PersonResponse]:
         repo = PersonRepository(db)
         persons = repo.get_all()
+
         return [PersonResponse.model_validate(person) for person in persons]
     
     @staticmethod
@@ -35,15 +38,18 @@ class PersonService:
         repo = PersonRepository(db)
         update_data = person_data.model_dump(exclude_unset=True)
         updated_person = repo.update(person_id, **update_data)
+
         if not updated_person:
             return None
-        db.flush()  # commit은 get_db에서
+        db.flush()  
         db.refresh(updated_person)
+
         return PersonResponse.model_validate(updated_person)
     
     @staticmethod
     def delete_person(person_id: int, db: Session) -> bool:
         repo = PersonRepository(db)
         success = repo.delete(person_id)
+        
         return success
 
