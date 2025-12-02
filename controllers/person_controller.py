@@ -1,51 +1,50 @@
-"""사용자 컨트롤러"""
 from typing import List
 from fastapi import APIRouter, HTTPException, status
-from services import UserService
+from services import PersonService
 from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/persons", tags=["Persons"])
 
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(user_data: UserCreate):
-    return UserService.create_user(user_data)
+@router.post("", response_model=PersonResponse, status_code=status.HTTP_201_CREATED)
+async def create_person(person_data: PersonCreate):
+    return PersonService.create_person(person_data)
 
 
-@router.get("", response_model=List[UserResponse])
-async def get_all_users():
-    return UserService.get_all_users()
+@router.get("", response_model=List[PersonResponse])
+async def get_all_persons():
+    return PersonService.get_all_persons()
 
 
-@router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int):
-    user = UserService.get_user(user_id)
-    if not user:
+@router.get("/{person_id}", response_model=PersonResponse)
+async def get_person(person_id: int):
+    person = PersonService.get_person(person_id)
+    if not person:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"사용자 ID {user_id}를 찾을 수 없습니다."
+            detail=f"사용자 ID {person_id}를 찾을 수 없습니다."
         )
-    return user
+    return person
 
 
-@router.put("/{user_id}", response_model=UserResponse)
-async def update_user(user_id: int, user_data: UserUpdate):
-    user = UserService.update_user(user_id, user_data)
-    if not user:
+@router.put("/{person_id}", response_model=PersonResponse)
+async def update_person(person_id: int, person_data: PersonUpdate):
+    person = PersonService.update_person(person_id, person_data)
+    if not person:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"사용자 ID {user_id}를 찾을 수 없습니다."
+            detail=f"사용자 ID {person_id}를 찾을 수 없습니다."
         )
-    return user
+    return person
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id: int):
-    success = UserService.delete_user(user_id)
+@router.delete("/{person_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_person(person_id: int):
+    success = PersonService.delete_person(person_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"사용자 ID {user_id}를 찾을 수 없습니다."
+            detail=f"사용자 ID {person_id}를 찾을 수 없습니다."
         )
     return None
 
