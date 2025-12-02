@@ -1,13 +1,10 @@
 """사용자 서비스"""
 from typing import List, Optional
-from schemas.user import UserCreate, UserUpdate, UserResponse
+from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 
 
-class UserService:
-    """사용자 비즈니스 로직"""
-    
-    # 임시 데이터 저장소 (실제로는 DB를 사용해야 함)
-    _users: List[dict] = []
+class PersonService:
+    _persons: List[dict] = []
     _next_id: int = 1
     
     @classmethod

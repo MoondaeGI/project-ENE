@@ -1,1 +1,7 @@
-"""요청/응답 스키마 패키지"""
+from schemas.person import PersonCreate, PersonUpdate, PersonResponse
+
+__all__ = [
+    "PersonCreate",
+    "PersonUpdate",
+    "PersonResponse"
+]

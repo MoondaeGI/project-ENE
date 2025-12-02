@@ -2,7 +2,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, status
 from services import UserService
-from schemas.user import UserCreate, UserUpdate, UserResponse
+from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
