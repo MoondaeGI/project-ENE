@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 def setup_cors(app: FastAPI) -> None:
-    # 프론트엔드 도메인만 허용 
     allow_origins = ["http://localhost:3000"]
     
     app.add_middleware(
