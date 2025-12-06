@@ -1,4 +1,3 @@
-"""FastAPI 애플리케이션 메인 파일"""
 import logging
 import sys
 import os

@@ -28,7 +28,6 @@ class LLMService:
     async def generate_response(
         self, 
         user_message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
         model: str = "gpt-4o-mini",
         temperature: float = 0.7
     ) -> str:
@@ -37,7 +36,6 @@ class LLMService:
         
         Args:
             user_message: 사용자 메시지
-            conversation_history: 대화 히스토리 (선택적)
             model: 사용할 모델 이름
             temperature: 응답 창의성 (0.0 ~ 1.0)
             
@@ -57,10 +55,6 @@ class LLMService:
                 "role": "system",
                 "content": system_prompt
             })
-            
-            # 대화 히스토리 추가
-            if conversation_history:
-                messages.extend(conversation_history)
             
             # 현재 사용자 메시지 추가
             messages.append({
@@ -143,8 +137,5 @@ class LLMService:
             return f"⚠️ {error_msg}"
 
 
-# 싱글톤 인스턴스 (다른 서비스들과 동일하게 모듈 레벨에서 바로 초기화)
-# app/main.py에서 settings가 먼저 로드되고 검증된 후 이 모듈이 import되므로
-# settings는 이미 준비된 상태입니다.
 llm_service = LLMService()
 
