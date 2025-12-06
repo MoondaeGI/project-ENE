@@ -1,6 +1,7 @@
 from typing import Generic, TypeVar, Type, Optional, List
 from sqlalchemy.orm import Session
 from config import Base
+import traceback
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -19,8 +20,14 @@ class BaseRepository(Generic[ModelType]):
     
     def create(self, obj: ModelType) -> ModelType:
         self.db.add(obj)
-        self.db.flush()
-        return obj
+
+        try:
+            self.db.flush()
+            return obj
+        except Exception as e:
+            print("▶ flush error:", repr(e))
+            traceback.print_exc()
+            raise
     
     def update(self, id: int, **kwargs) -> Optional[ModelType]:
         obj = self.get(id)

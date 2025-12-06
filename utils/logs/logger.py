@@ -363,3 +363,24 @@ def log_error(message: str, exception: Exception) -> None:
     logger = logging.getLogger(__name__)
     logger.error(f"✗ {message}: {exception}")
     logger.error(traceback.format_exc())
+
+
+# ==================== SQL 쿼리 로거 함수 ====================
+
+def log_sql_query(query: str, duration: Optional[float] = None):
+    """SQL 쿼리 로깅
+    
+    Args:
+        query: SQL 쿼리 문자열
+        duration: 쿼리 실행 시간 (초, 선택적)
+    """
+    timestamp = format_timestamp()
+    
+    # SQL 쿼리를 예쁘게 포맷팅 (너무 길면 자르기)
+    formatted_query = truncate_text(query, 500)
+    
+    print(f"{Fore.MAGENTA}SQL {timestamp}{Style.RESET_ALL}")
+    print(f"  path: SQL query")
+    print(f"  query: {formatted_query}")
+    if duration is not None:
+        print(f"  duration: {duration:.3f}s")

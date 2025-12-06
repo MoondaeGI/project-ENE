@@ -9,6 +9,7 @@ from utils.logs.logger import (
     log_websocket_disconnect,
     log_llm_request,
     log_llm_response,
+    log_sql_query,
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "log_websocket_disconnect",
     "log_llm_request",
     "log_llm_response",
+    "log_sql_query",
 ]
 
