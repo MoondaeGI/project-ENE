@@ -9,7 +9,6 @@ class MessageService:
     
     @staticmethod
     def create_message(message_data: MessageCreate, db: Session) -> MessageResponse:
-        print(type(message_data.content), repr(message_data.content))
         repo = MessageRepository(db)
         message = Message(person_id=message_data.person_id, content=message_data.content)
         created_message = repo.create(message)

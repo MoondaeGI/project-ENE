@@ -4,7 +4,7 @@ import time
 from typing import List, Dict
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
 from sqlalchemy.orm import Session
-from config.database_config import SessionLocal
+from config.database_config import get_db
 from services import websocket_service, llm_service
 from services.message_service import MessageService
 from schemas.message import MessageCreate
@@ -85,23 +85,30 @@ async def websocket_endpoint(websocket: WebSocket):
             except Exception as e:
                 logger.error(f"[WebSocket] 메시지 로깅 실패: {str(e)}")
             
-            # 메시지를 person_id 1번에 저장
-            db: Session = SessionLocal()
+            # 메시지를 person_id 1번에 저장 (get_db()를 사용하여 자동 커밋/롤백)
+            safe_content = user_message.encode('utf-8', errors='replace').decode('utf-8')
+            message_data = MessageCreate(person_id=1, content=safe_content)
+            
+            # get_db()는 제너레이터이므로 for 루프로 사용하면 자동으로 commit/rollback 처리됨
             try:
-                safe_content = user_message.encode('utf-8', errors='replace').decode('utf-8')
-                message_data = MessageCreate(person_id=1, content=safe_content)
-                MessageService.create_message(message_data, db)
-                logger.info(f"[WebSocket] 메시지 저장 완료 - person_id: 1")
-            except (UnicodeEncodeError, UnicodeDecodeError) as e:
-                # 인코딩 오류는 간단히 로깅 (에러 메시지 자체가 인코딩 문제를 일으킬 수 있음)
-                error_type = type(e).__name__
-                logger.error(f"[WebSocket] 메시지 저장 실패 ({error_type})")
+                for db in get_db():
+                    try:
+                        MessageService.create_message(message_data, db)
+                        logger.info(f"[WebSocket] 메시지 저장 완료 - person_id: 1")
+                    except (UnicodeEncodeError, UnicodeDecodeError) as e:
+                        # 인코딩 오류는 간단히 로깅 (에러 메시지 자체가 인코딩 문제를 일으킬 수 있음)
+                        error_type = type(e).__name__
+                        logger.error(f"[WebSocket] 메시지 저장 실패 ({error_type})")
+                        raise  # get_db()의 except 블록에서 rollback 처리
+                    except Exception as e:
+                        # 에러 메시지를 안전하게 처리
+                        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+                        logger.error(f"[WebSocket] 메시지 저장 실패: {error_msg}")
+                        raise  # get_db()의 except 블록에서 rollback 처리
+                    break  # 한 번만 실행
             except Exception as e:
-                # 에러 메시지를 안전하게 처리
-                error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
-                logger.error(f"[WebSocket] 메시지 저장 실패: {error_msg}")
-            finally:
-                db.close()  
+                # get_db() 외부에서 발생한 예외는 로깅만
+                logger.error(f"[WebSocket] DB 세션 생성 실패: {str(e)}")  
             
             # LLM 응답 생성
             try:

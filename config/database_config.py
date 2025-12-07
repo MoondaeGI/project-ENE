@@ -33,7 +33,6 @@ logger.info(f"[Database] 연결 URL: {masked_url}")
 
 # SQL 쿼리 로깅을 위한 커스텀 핸들러 설정
 def setup_sql_logging():
-    """SQLAlchemy 쿼리 로깅을 커스텀 로거로 리다이렉트"""
     from utils.logs.logger import log_sql_query
     import time
     
@@ -67,6 +66,7 @@ def setup_sql_logging():
 engine = create_engine(
     DATABASE_URL, 
     connect_args={"client_encoding": "UTF8"},
+    echo=True
 )
 
 # SQL 쿼리 로깅 설정
