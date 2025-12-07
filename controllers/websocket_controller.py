@@ -135,7 +135,14 @@ async def websocket_endpoint(websocket: WebSocket):
                         logger.error(f"[WebSocket] LLM 응답 생성 실패: {str(e)}")
                         llm_response = "⚠️ 응답 생성 중 오류가 발생했습니다."
                 
-                # 6. LLM 응답을 message에 저장
+                # 6. LLM 응답 전송 (먼저 전송)
+                try:
+                    await websocket_service.send_personal_message(llm_response, websocket)
+                except:
+                    # 메시지 전송 실패 시 연결이 끊어진 것으로 간주
+                    break
+                
+                # 7. LLM 응답을 message에 저장
                 safe_ai_content = llm_response.encode('utf-8', errors='replace').decode('utf-8')
                 ai_message_data = AIMessageCreate(content=safe_ai_content)
                 
@@ -150,16 +157,19 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.error(f"[WebSocket] AI 메시지 저장 실패: {error_msg}")
                     logger.exception(e)
                 
-                # 7. 현재 최신 message_id와 last_message_id 차이가 10 이상이면 reflection 생성
+                # 8. 현재 최신 message_id와 last_message_id 차이가 10 이상이면 reflection 생성
                 if current_message_id - last_message_id >= 10:
                     try:
                         # 요약에 사용할 message_ids 추출
                         message_ids = [msg.id for msg in messages]
                         
-                        # 통합 메서드로 reflection 생성 및 모든 업데이트 처리
-                        await reflection_service.create_reflection_with_messages(
-                            reflection_summary=reflection_summary,
-                            messages=messages,
+                        # LLM으로 요약 생성 (트랜잭션 밖에서 수행)
+                        message_contents = [msg.content for msg in messages]
+                        summary = await llm_service.generate_summary(reflection_summary, message_contents)
+                        
+                        # 트랜잭션으로 reflection 생성 및 모든 업데이트 처리
+                        reflection_service.create_reflection_with_messages(
+                            summary=summary,
                             message_ids=message_ids,
                             current_message_id=current_message_id,
                             person_id=person_id
@@ -172,13 +182,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 
             finally:
                 db.close()
-            
-            # LLM 응답 전송
-            try:
-                await websocket_service.send_personal_message(llm_response, websocket)
-            except:
-                # 메시지 전송 실패 시 연결이 끊어진 것으로 간주
-                break
             
             # 시간 측정 종료
             duration = time.time() - start_time

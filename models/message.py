@@ -11,10 +11,11 @@ class MessageAction(enum.Enum):
 
 class Message(Base):
     __tablename__ = "message"
+    __table_args__ = {'schema': 'ene'}
     
     id = Column(Integer, primary_key=True, index=True)
-    person_id = Column(Integer, ForeignKey("person.id"), nullable=True)
+    person_id = Column(Integer, ForeignKey("ene.person.id"), nullable=True)
     content = Column(String, nullable=False)
     action = Column(Enum(MessageAction), nullable=False, default=MessageAction.PERSON)
-    reflection_id = Column(Integer, ForeignKey("reflection.id"), nullable=True)
+    reflection_id = Column(Integer, ForeignKey("ene.reflection.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

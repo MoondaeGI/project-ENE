@@ -31,20 +31,19 @@ class ReflectionService:
         return ReflectionResponse.model_validate(created_reflection)
     
     @transactional
-    async def create_reflection_with_messages(
+    def create_reflection_with_messages(
         self,
-        reflection_summary: Optional[str],
-        messages: List[Message],
+        summary: str,
         message_ids: List[int],
         current_message_id: int,
         person_id: int
     ) -> ReflectionResponse:
         """
-        하나의 트랜잭션으로 요약 생성부터 모든 업데이트까지 처리
+        하나의 트랜잭션으로 reflection 생성 및 모든 업데이트 처리
+        (LLM 요약 생성은 트랜잭션 밖에서 수행)
         
         Args:
-            reflection_summary: 이전 reflection 요약 (없으면 None)
-            messages: 요약할 메시지 리스트
+            summary: LLM으로 생성된 요약 텍스트
             message_ids: 요약에 사용된 message ID 리스트
             current_message_id: 현재 최신 message_id
             person_id: person_id
@@ -52,26 +51,20 @@ class ReflectionService:
         Returns:
             생성된 ReflectionResponse
         """
-        # 1. 메시지 내용을 문자열 리스트로 변환
-        message_contents = [msg.content for msg in messages]
-        
-        # 2. LLM으로 요약 생성
-        summary = await llm_service.generate_summary(reflection_summary, message_contents)
-        
-        # 3. 이전 reflection이 있으면 parent_id로 설정
+        # 1. 이전 reflection이 있으면 parent_id로 설정
         previous_reflection = self.get_latest_reflection(person_id)
         parent_id = previous_reflection.id if previous_reflection else None
         
-        # 4. 새 reflection 생성
+        # 2. 새 reflection 생성
         new_reflection = Reflection(summary=summary, parent_id=parent_id)
         created_reflection = self.repo.create(new_reflection)
         self.db.refresh(created_reflection)
         
-        # 5. 사용된 message들의 reflection_id를 새 reflection.id로 업데이트
+        # 3. 사용된 message들의 reflection_id를 새 reflection.id로 업데이트
         if message_ids:
             self.message_repo.update_reflection_ids(message_ids, created_reflection.id)
         
-        # 6. last_reflected_id 업데이트
+        # 4. last_reflected_id 업데이트
         self.last_reflected_repo.create_or_update(person_id, current_message_id)
         
         return ReflectionResponse.model_validate(created_reflection)

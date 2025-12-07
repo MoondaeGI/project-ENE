@@ -4,6 +4,7 @@ from config import Base
 
 class Person(Base):
     __tablename__ = "person"
+    __table_args__ = {'schema': 'ene'}
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
