@@ -6,7 +6,9 @@ from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 
 
 class PersonService:
-    
+    def __init__(self, db: Session):
+        self.db = db
+        
     @staticmethod
     def create_person(person_data: PersonCreate, db: Session) -> PersonResponse:
         repo = PersonRepository(db)

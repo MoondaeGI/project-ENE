@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket 연결 엔드포인트"""
     origin = websocket.headers.get("origin", "없음")
     client_host = websocket.client.host if websocket.client else "Unknown"
     
