@@ -16,4 +16,5 @@ class Message(Base):
     person_id = Column(Integer, ForeignKey("person.id"), nullable=True)
     content = Column(String, nullable=False)
     action = Column(Enum(MessageAction), nullable=False, default=MessageAction.PERSON)
+    reflection_id = Column(Integer, ForeignKey("reflection.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

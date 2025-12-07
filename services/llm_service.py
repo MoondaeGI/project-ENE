@@ -135,6 +135,235 @@ class LLMService:
             )
             
             return f"⚠️ {error_msg}"
+    
+    async def generate_response_with_context(
+        self,
+        user_message: str,
+        reflection: Optional[str],
+        messages: List[str],
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.7
+    ) -> str:
+        """
+        reflection과 message list를 포함한 컨텍스트로 응답 생성
+        
+        Args:
+            user_message: 사용자 메시지
+            reflection: 이전 reflection 요약 (없으면 None)
+            messages: 이전 메시지 리스트
+            model: 사용할 모델 이름
+            temperature: 응답 창의성 (0.0 ~ 1.0)
+            
+        Returns:
+            LLM 응답 텍스트
+        """
+        if not self.client:
+            return "⚠️ OpenAI API 키가 설정되지 않았습니다. .env 파일에 OPENAI_API_KEY를 추가해주세요."
+        
+        try:
+            messages_list = []
+            
+            # 시스템 프롬프트
+            system_prompt = get_system_prompt()
+            messages_list.append({
+                "role": "system",
+                "content": system_prompt
+            })
+            
+            # 이전 reflection이 있으면 컨텍스트로 추가
+            if reflection:
+                messages_list.append({
+                    "role": "system",
+                    "content": f"이전 대화 요약:\n{reflection}"
+                })
+            
+            # 이전 메시지들을 컨텍스트로 추가
+            if messages:
+                context = "\n".join([f"- {msg}" for msg in messages])
+                messages_list.append({
+                    "role": "system",
+                    "content": f"이전 대화 내용:\n{context}"
+                })
+            
+            # 현재 사용자 메시지 추가
+            messages_list.append({
+                "role": "user",
+                "content": user_message
+            })
+            
+            api_endpoint = "https://api.openai.com/v1/chat/completions"
+            max_tokens = 1000
+            
+            request_headers = {
+                "Content-Type": "application/json"
+            }
+            if settings.openai_api_key:
+                request_headers["Authorization"] = f"Bearer {settings.openai_api_key[:10]}..."
+            
+            log_llm_request(
+                api_endpoint=api_endpoint,
+                model=model,
+                prompt=messages_list,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                request_headers=request_headers
+            )
+            
+            start_time = time.time()
+            
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages_list,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            
+            duration = time.time() - start_time
+            llm_response = response.choices[0].message.content
+            
+            usage_info = None
+            if hasattr(response, 'usage') and response.usage:
+                usage_info = {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens
+                }
+            
+            log_llm_response(
+                api_endpoint=api_endpoint,
+                model=model,
+                response_content=llm_response,
+                usage_info=usage_info,
+                duration=duration
+            )
+            
+            return llm_response
+            
+        except Exception as e:
+            error_msg = f"LLM 응답 생성 중 오류 발생: {str(e)}"
+            logger.error(f"[LLM] {error_msg}")
+            logger.exception(e)
+            
+            api_endpoint = "https://api.openai.com/v1/chat/completions"
+            log_llm_response(
+                api_endpoint=api_endpoint,
+                model=model,
+                response_content=None,
+                error=error_msg
+            )
+            
+            return f"⚠️ {error_msg}"
+    
+    async def generate_summary(
+        self,
+        reflection: Optional[str],
+        messages: List[str],
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.3
+    ) -> str:
+        """
+        reflection과 message list를 요약
+        
+        Args:
+            reflection: 이전 reflection 요약 (없으면 None)
+            messages: 요약할 메시지 리스트
+            model: 사용할 모델 이름
+            temperature: 응답 창의성 (요약이므로 낮게 설정)
+            
+        Returns:
+            요약 텍스트
+        """
+        if not self.client:
+            return "⚠️ OpenAI API 키가 설정되지 않았습니다."
+        
+        try:
+            messages_list = []
+            
+            # 시스템 프롬프트 (요약용)
+            messages_list.append({
+                "role": "system",
+                "content": "당신은 대화 내용을 요약하는 전문가입니다. 주어진 대화 내용을 간결하고 명확하게 요약해주세요."
+            })
+            
+            # 이전 reflection이 있으면 컨텍스트로 추가
+            if reflection:
+                messages_list.append({
+                    "role": "system",
+                    "content": f"이전 요약:\n{reflection}"
+                })
+            
+            # 요약할 메시지들을 컨텍스트로 추가
+            if messages:
+                context = "\n".join([f"- {msg}" for msg in messages])
+                messages_list.append({
+                    "role": "user",
+                    "content": f"다음 대화 내용을 요약해주세요:\n\n{context}"
+                })
+            else:
+                return "요약할 메시지가 없습니다."
+            
+            api_endpoint = "https://api.openai.com/v1/chat/completions"
+            max_tokens = 500  # 요약이므로 토큰 수 제한
+            
+            request_headers = {
+                "Content-Type": "application/json"
+            }
+            if settings.openai_api_key:
+                request_headers["Authorization"] = f"Bearer {settings.openai_api_key[:10]}..."
+            
+            log_llm_request(
+                api_endpoint=api_endpoint,
+                model=model,
+                prompt=messages_list,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                request_headers=request_headers
+            )
+            
+            start_time = time.time()
+            
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages_list,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            
+            duration = time.time() - start_time
+            summary = response.choices[0].message.content
+            
+            usage_info = None
+            if hasattr(response, 'usage') and response.usage:
+                usage_info = {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens
+                }
+            
+            log_llm_response(
+                api_endpoint=api_endpoint,
+                model=model,
+                response_content=summary,
+                usage_info=usage_info,
+                duration=duration
+            )
+            
+            return summary
+            
+        except Exception as e:
+            error_msg = f"요약 생성 중 오류 발생: {str(e)}"
+            logger.error(f"[LLM] {error_msg}")
+            logger.exception(e)
+            
+            api_endpoint = "https://api.openai.com/v1/chat/completions"
+            log_llm_response(
+                api_endpoint=api_endpoint,
+                model=model,
+                response_content=None,
+                error=error_msg
+            )
+            
+            return f"⚠️ {error_msg}"
 
 
 llm_service = LLMService()
