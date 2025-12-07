@@ -4,11 +4,12 @@ from repositories import PersonRepository
 from models.person import Person
 from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 from utils.transactional import transactional
-
+from config import get_db
+from fastapi import Depends
 
 class PersonService:
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session = Depends(get_db)):
         self.db = db
         self.repo = PersonRepository(db)
     

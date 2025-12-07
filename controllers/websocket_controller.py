@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from config.database_config import SessionLocal
 from services import websocket_service, llm_service
 from services.message_service import MessageService
-from schemas.message import MessageCreate
+from schemas.message import PersonMessageCreate, AIMessageCreate
 from utils.logs.logger import (
     log_websocket_connect,
     log_websocket_message,
@@ -73,14 +73,15 @@ async def websocket_endpoint(websocket: WebSocket):
             except Exception as e:
                 logger.error(f"[WebSocket] 메시지 로깅 실패: {str(e)}")
             
-            # 메시지를 person_id 1번에 저장 (@transactional 데코레이터가 자동으로 커밋/롤백 처리)
+            # 사용자 메시지를 person_id 1번에 저장 (@transactional 데코레이터가 자동으로 커밋/롤백 처리)
             safe_content = user_message.encode('utf-8', errors='replace').decode('utf-8')
-            message_data = MessageCreate(person_id=1, content=safe_content)
+            person_message_data = PersonMessageCreate(person_id=1, content=safe_content)
+
+            message_service = MessageService(SessionLocal())
             
-            db: Session = SessionLocal()
             try:
-                MessageService(db).create_message(message_data)
-                logger.info(f"[WebSocket] 메시지 저장 완료 - person_id: 1")
+                message_service.create_person_message(person_message_data)
+                logger.info(f"[WebSocket] 사용자 메시지 저장 완료 - person_id: 1")
             except (UnicodeEncodeError, UnicodeDecodeError) as e:
                 # 인코딩 오류는 간단히 로깅 (에러 메시지 자체가 인코딩 문제를 일으킬 수 있음)
                 error_type = type(e).__name__
@@ -90,9 +91,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
                 logger.error(f"[WebSocket] 메시지 저장 실패: {error_msg}")
                 logger.exception(e)
-            finally:
-                db.close()  
-            
+
             # LLM 응답 생성
             try:
                 await websocket_service.send_personal_message(
@@ -112,6 +111,20 @@ async def websocket_endpoint(websocket: WebSocket):
                 except Exception as e:
                     logger.error(f"[WebSocket] LLM 응답 생성 실패: {str(e)}")
                     llm_response = "⚠️ 응답 생성 중 오류가 발생했습니다."
+            
+            safe_ai_content = llm_response.encode('utf-8', errors='replace').decode('utf-8')
+            ai_message_data = AIMessageCreate(content=safe_ai_content)
+            
+            try:
+                message_service.create_ai_message(ai_message_data)
+                logger.info(f"[WebSocket] AI 메시지 저장 완료")
+            except (UnicodeEncodeError, UnicodeDecodeError) as e:
+                error_type = type(e).__name__
+                logger.error(f"[WebSocket] AI 메시지 저장 실패 ({error_type})")
+            except Exception as e:
+                error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+                logger.error(f"[WebSocket] AI 메시지 저장 실패: {error_msg}")
+                logger.exception(e)
             
             # LLM 응답 전송
             try:
