@@ -16,12 +16,12 @@ class ReflectionWorker:
         self,
         person_id: int,
         current_message_id: int,
-        messages: List[Tuple[int, str]],
+        messages_with_roles: List[Tuple[int, str, str]],
         reflection_summary: Optional[str],
     ) -> None:
         thread = threading.Thread(
             target=self._run_worker,
-            args=(person_id, current_message_id, messages, reflection_summary),
+            args=(person_id, current_message_id, messages_with_roles, reflection_summary),
             daemon=True,
         )
         thread.start()
@@ -30,16 +30,17 @@ class ReflectionWorker:
         self,
         person_id: int,
         current_message_id: int,
-        messages: List[Tuple[int, str]],
+        messages_with_roles: List[Tuple[int, str, str]],
         reflection_summary: Optional[str],
     ) -> None:
         db = SessionLocal()
         try:
             reflection_service = ReflectionService(db)
-            message_ids = [msg_id for msg_id, _ in messages]
-            message_contents = [content for _, content in messages]
+            message_ids = [msg_id for msg_id, _, _ in messages_with_roles]
 
-            summary = asyncio.run(self._generate_summary(reflection_summary, message_contents))
+            summary = asyncio.run(
+                self._generate_summary(reflection_summary, messages_with_roles)
+            )
 
             reflection_service.create_reflection_with_messages(
                 summary=summary,
@@ -56,9 +57,13 @@ class ReflectionWorker:
             db.close()
 
     async def _generate_summary(
-        self, reflection_summary: Optional[str], message_contents: List[str]
+        self, reflection_summary: Optional[str], messages_with_roles: List[Tuple[int, str, str]]
     ) -> str:
-        return await llm_service.generate_summary(reflection_summary, message_contents)
+        return await llm_service.generate_summary(
+            reflection_summary,
+            messages=[],
+            messages_with_roles=[(role, content) for _, content, role in messages_with_roles],
+        )
 
 
 reflection_worker = ReflectionWorker()

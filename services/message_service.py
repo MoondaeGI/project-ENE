@@ -45,7 +45,6 @@ class MessageService:
             return None
         return MessageResponse.model_validate(message)
     
-    def get_messages_after(self, message_id: int, person_id: int) -> List[Message]:
-        """message_id 이후의 메시지 리스트 조회"""
-        return self.repo.get_messages_after(message_id, person_id)
+    def get_messages_after(self, message_id: int) -> List[Message]:
+        return self.repo.get_messages_after(message_id)
     

@@ -111,7 +111,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 last_message_id = last_reflected_service.get_last_reflected_message_id(person_id)
                 
                 # 4. last_message_id 이후의 모든 메시지 가져오기
-                messages = message_service.get_messages_after(last_message_id, person_id)
+                messages = message_service.get_messages_after(last_message_id)
                 message_contents = [msg.content for msg in messages]
                 
                 # 5. LLM 응답 생성 (reflection과 message list 포함)
@@ -161,11 +161,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 8. 현재 최신 message_id와 last_message_id 차이가 10 이상이면 reflection 생성
                 if current_message_id - last_message_id >= 10:
                     try:
-                        messages_payload = [(msg.id, msg.content) for msg in messages]
+                        messages_payload = [
+                            (msg.id, msg.content, msg.action.value) for msg in messages
+                        ]
                         reflection_worker.start(
                             person_id=person_id,
                             current_message_id=current_message_id,
-                            messages=messages_payload,
+                            messages_with_roles=messages_payload,
                             reflection_summary=reflection_summary
                         )
                         logger.info(f"[WebSocket] Reflection 백그라운드 작업 시작 - message_id: {current_message_id}")

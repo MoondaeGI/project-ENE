@@ -1,7 +1,7 @@
 """LLM 서비스 (OpenAI)"""
 import logging
 import time
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from openai import OpenAI
 from config import settings
 from utils.logs.logger import log_llm_request, log_llm_response
@@ -259,7 +259,8 @@ class LLMService:
         reflection: Optional[str],
         messages: List[str],
         model: str = "gpt-4o-mini",
-        temperature: float = 0.3
+        temperature: float = 0.3,
+        messages_with_roles: Optional[List[Tuple[str, str]]] = None,
     ) -> str:
         """
         reflection과 message list를 요약
@@ -279,10 +280,14 @@ class LLMService:
         try:
             messages_list = []
             
-            # 시스템 프롬프트 (요약용)
+            system_prompt = (
+                "당신은 대화 내용을 요약하는 전문가입니다. "
+                "주어진 대화에서 PERSON(사용자) 발화를 더 높은 비중으로 반영하여 "
+                "핵심을 간결하고 명확하게 요약하세요. AI 응답은 보조 맥락으로만 사용하세요."
+            )
             messages_list.append({
                 "role": "system",
-                "content": "당신은 대화 내용을 요약하는 전문가입니다. 주어진 대화 내용을 간결하고 명확하게 요약해주세요."
+                "content": system_prompt
             })
             
             # 이전 reflection이 있으면 컨텍스트로 추가
@@ -293,14 +298,24 @@ class LLMService:
                 })
             
             # 요약할 메시지들을 컨텍스트로 추가
-            if messages:
+            if messages_with_roles:
+                context_lines = []
+                for role, content in messages_with_roles:
+                    role_label = "PERSON" if role.upper() == "PERSON" else "AI"
+                    context_lines.append(f"[{role_label}] {content}")
+                context = "\n".join(context_lines)
+            elif messages:
                 context = "\n".join([f"- {msg}" for msg in messages])
-                messages_list.append({
-                    "role": "user",
-                    "content": f"다음 대화 내용을 요약해주세요:\n\n{context}"
-                })
             else:
                 return "요약할 메시지가 없습니다."
+
+            messages_list.append({
+                "role": "user",
+                "content": (
+                    "다음 대화를 요약해주세요. PERSON 발화를 우선적으로 반영하세요:\n\n"
+                    f"{context}"
+                )
+            })
             
             api_endpoint = "https://api.openai.com/v1/chat/completions"
             max_tokens = 500  # 요약이므로 토큰 수 제한
