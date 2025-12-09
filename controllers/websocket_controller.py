@@ -8,6 +8,7 @@ from config.database_config import SessionLocal
 from services import websocket_service, llm_service
 from services.message_service import MessageService
 from services.reflection_service import ReflectionService
+from services.workers.reflection_worker import reflection_worker
 from services.last_reflected_id_service import LastReflectedIdService
 from schemas.message import PersonMessageCreate, AIMessageCreate
 from utils.logs.logger import (
@@ -160,24 +161,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 8. 현재 최신 message_id와 last_message_id 차이가 10 이상이면 reflection 생성
                 if current_message_id - last_message_id >= 10:
                     try:
-                        # 요약에 사용할 message_ids 추출
-                        message_ids = [msg.id for msg in messages]
-                        
-                        # LLM으로 요약 생성 (트랜잭션 밖에서 수행)
-                        message_contents = [msg.content for msg in messages]
-                        summary = await llm_service.generate_summary(reflection_summary, message_contents)
-                        
-                        # 트랜잭션으로 reflection 생성 및 모든 업데이트 처리
-                        reflection_service.create_reflection_with_messages(
-                            summary=summary,
-                            message_ids=message_ids,
+                        messages_payload = [(msg.id, msg.content) for msg in messages]
+                        reflection_worker.start(
+                            person_id=person_id,
                             current_message_id=current_message_id,
-                            person_id=person_id
+                            messages=messages_payload,
+                            reflection_summary=reflection_summary
                         )
-                        logger.info(f"[WebSocket] Reflection 생성 완료 - message_id: {current_message_id}")
+                        logger.info(f"[WebSocket] Reflection 백그라운드 작업 시작 - message_id: {current_message_id}")
                     except Exception as e:
                         error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
-                        logger.error(f"[WebSocket] Reflection 생성 실패: {error_msg}")
+                        logger.error(f"[WebSocket] Reflection 작업 스레드 시작 실패: {error_msg}")
                         logger.exception(e)
                 
             finally:
