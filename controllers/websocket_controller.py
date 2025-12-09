@@ -135,7 +135,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         logger.error(f"[WebSocket] LLM 응답 생성 실패: {str(e)}")
                         llm_response = "⚠️ 응답 생성 중 오류가 발생했습니다."
                 
-                # 6. LLM 응답 전송 (먼저 전송)
+                # 6. LLM 응답 전송
                 try:
                     await websocket_service.send_personal_message(llm_response, websocket)
                 except:
