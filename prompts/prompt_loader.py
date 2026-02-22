@@ -28,7 +28,7 @@ def clear_prompt_cache() -> None:
 
 
 def get_system_prompt() -> str:
-    """채팅용 시스템 프롬프트 (ENE 캐릭터 등)."""
+    """사용자에게 보내는 채팅 응답에만 쓸 시스템 프롬프트 (ENE 캐릭터). 요약/태그 등 다른 LLM 호출에는 사용하지 말 것."""
     default = "당신은 친절하고 도움이 되는 AI 어시스턴트입니다. 사용자의 질문에 명확하고 정확하게 답변해주세요."
     return _read_prompt_file("system_prompt.txt", default)
 

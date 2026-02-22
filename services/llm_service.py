@@ -57,7 +57,7 @@ class LLMService:
             # 대화 히스토리 구성
             messages = []
             
-            # 시스템 프롬프트 (파일에서 읽어옴)
+            # 사용자 응답용 시스템 프롬프트 (ENE) — 채팅에만 사용
             system_prompt = get_system_prompt()
             messages.append({
                 "role": "system",
@@ -171,13 +171,12 @@ class LLMService:
         try:
             messages_list = []
             
-            # 시스템 프롬프트
+            # 사용자 응답용 시스템 프롬프트 (ENE) — 채팅에만 사용
             system_prompt = get_system_prompt()
             messages_list.append({
                 "role": "system",
                 "content": system_prompt
             })
-            
             # 이전 reflection이 있으면 컨텍스트로 추가
             if reflection:
                 messages_list.append({
