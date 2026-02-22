@@ -93,6 +93,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     person_message_response = message_service.create_person_message(person_message_data)
                     current_message_id = person_message_response.id
                     logger.info(f"[WebSocket] 사용자 메시지 저장 완료 - message_id: {current_message_id}")
+                    try:
+                        await message_service.attach_tags_for_content(current_message_id, safe_content)
+                        db.commit()
+                    except Exception as tag_err:
+                        logger.warning(f"[WebSocket] 사용자 메시지 태그 연결 실패: {tag_err}")
+                        db.rollback()
                 except (UnicodeEncodeError, UnicodeDecodeError) as e:
                     error_type = type(e).__name__
                     logger.error(f"[WebSocket] 메시지 저장 실패 ({error_type})")
@@ -150,6 +156,14 @@ async def websocket_endpoint(websocket: WebSocket):
                 try:
                     ai_message_response = message_service.create_ai_message(ai_message_data)
                     logger.info(f"[WebSocket] AI 메시지 저장 완료 - message_id: {ai_message_response.id}")
+                    try:
+                        await message_service.attach_tags_for_content(
+                            ai_message_response.id, safe_ai_content
+                        )
+                        db.commit()
+                    except Exception as tag_err:
+                        logger.warning(f"[WebSocket] AI 메시지 태그 연결 실패: {tag_err}")
+                        db.rollback()
                 except (UnicodeEncodeError, UnicodeDecodeError) as e:
                     error_type = type(e).__name__
                     logger.error(f"[WebSocket] AI 메시지 저장 실패 ({error_type})")

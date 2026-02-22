@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 from config.database_config import SessionLocal
 from services.llm_service import llm_service
 from services.reflection_service import ReflectionService
+from services.tag_service import TagService
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,15 @@ class ReflectionWorker:
         db = SessionLocal()
         try:
             reflection_service = ReflectionService(db)
+            tag_service = TagService(db)
             message_ids = [msg_id for msg_id, _, _ in messages_with_roles]
 
             summary = asyncio.run(
                 self._generate_summary(reflection_summary, messages_with_roles)
+            )
+
+            tag_ids = asyncio.run(
+                tag_service.get_tag_ids_for_content(summary, max_tags=5)
             )
 
             reflection_service.create_reflection_with_messages(
@@ -47,6 +53,7 @@ class ReflectionWorker:
                 message_ids=message_ids,
                 current_message_id=current_message_id,
                 person_id=person_id,
+                tag_ids=tag_ids,
             )
             logger.info("[ReflectionWorker] Reflection 생성 완료 - message_id: %s", current_message_id)
         except Exception as e:
