@@ -1,9 +1,7 @@
 """WebSocket 컨트롤러"""
 import logging
 import time
-from typing import List, Dict
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-from sqlalchemy.orm import Session
 from config.database_config import SessionLocal
 from services import websocket_service, llm_service
 from services.message_service import MessageService
