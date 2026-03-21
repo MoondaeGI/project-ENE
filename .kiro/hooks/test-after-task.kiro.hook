@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Run Tests After Task Completion",
+  "description": "spec 태스크가 완료되면 pytest를 자동으로 실행하여 모든 테스트가 통과하는지 검증합니다",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pytest tests/ -v --tb=short",
+    "timeout": 120
+  }
+}
