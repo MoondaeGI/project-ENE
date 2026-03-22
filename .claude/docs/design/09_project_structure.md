@@ -142,15 +142,15 @@ ai-character-chat-system/
 
 ## Layer별 책임
 
-| Layer | 경로 | 책임 |
-|-------|------|------|
-| API | `src/api/` | HTTP/WebSocket 엔드포인트, 인증, 요청 검증 |
-| Workflow | `src/workflow/` | LangGraph 대화 흐름 제어, 노드 간 상태 전달 |
-| Services | `src/services/` | 핵심 비즈니스 로직, 도메인 규칙 적용 |
-| Models | `src/models/` | 데이터 구조 정의, Pydantic 유효성 검증 |
-| Database | `src/database/` | DB 연결 관리, Repository 패턴, 마이그레이션 |
-| Core | `src/core/` | 설정, 로깅, 커스텀 예외, 공통 유틸리티 |
-| Background | `src/background/` | 주기적 작업 (망각 곡선, Portrait 업데이트) |
+| Layer      | 경로              | 책임                                        |
+| ---------- | ----------------- | ------------------------------------------- |
+| API        | `src/api/`        | HTTP/WebSocket 엔드포인트, 인증, 요청 검증  |
+| Workflow   | `src/workflow/`   | LangGraph 대화 흐름 제어, 노드 간 상태 전달 |
+| Services   | `src/services/`   | 핵심 비즈니스 로직, 도메인 규칙 적용        |
+| Models     | `src/models/`     | 데이터 구조 정의, Pydantic 유효성 검증      |
+| Database   | `src/database/`   | DB 연결 관리, Repository 패턴, 마이그레이션 |
+| Core       | `src/core/`       | 설정, 로깅, 커스텀 예외, 공통 유틸리티      |
+| Background | `src/background/` | 주기적 작업 (망각 곡선, Portrait 업데이트)  |
 
 ## 주요 파일 예시
 
@@ -235,23 +235,4 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
-```
-
-## 실행 방법
-
-```bash
-# 의존성 설치
-poetry install
-
-# 환경 변수 설정
-cp .env.example .env
-
-# DB 초기화
-poetry run python scripts/setup_db.py
-
-# 개발 서버 실행
-poetry run uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
-
-# Docker
-docker-compose up --build
 ```

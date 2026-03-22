@@ -5,22 +5,42 @@
 AI Character Chat System은 사용자와 장기적인 관계를 형성하고, 축적된 맥락을 바탕으로 자연스럽고 의미 있는 대화를 제공하는 memory-based agent 시스템입니다.
 
 핵심 개념:
+
 - **Memory Stream**: Generative Agents 아키텍처 기반, 모든 대화를 Observation으로 변환하여 시간순 저장
 - **Advanced Retrieval**: Recency + Memory_Strength + Relevance 가중합 기반 검색
 - **Reflection**: 원시 기억으로부터 상위 의미를 추론하는 시스템
 - **Planning**: 대화 목표를 계획하는 메커니즘
 
+## 실행 방법
+
+```bash
+# 의존성 설치
+poetry install
+
+# 환경 변수 설정
+cp .env.example .env
+
+# DB 초기화
+poetry run python scripts/setup_db.py
+
+# 개발 서버 실행
+poetry run uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+
+# Docker
+docker-compose up --build
+```
+
 ## 기술 스택
 
-| 분류 | 기술 |
-|------|------|
-| Language | Python 3.11+ |
-| Web Framework | FastAPI (비동기, WebSocket) |
-| Multi-Agent | LangGraph (상태 기반 오케스트레이션) |
-| LLM Integration | LangChain |
-| Database | PostgreSQL + pgvector |
-| Deployment | AWS Cloud |
-| LLM Providers | OpenAI, Anthropic, Google Gemini, Ollama, LM Studio |
+| 분류            | 기술                                                |
+| --------------- | --------------------------------------------------- |
+| Language        | Python 3.11+                                        |
+| Web Framework   | FastAPI (비동기, WebSocket)                         |
+| Multi-Agent     | LangGraph (상태 기반 오케스트레이션)                |
+| LLM Integration | LangChain                                           |
+| Database        | PostgreSQL + pgvector                               |
+| Deployment      | AWS Cloud                                           |
+| LLM Providers   | OpenAI, Anthropic, Google Gemini, Ollama, LM Studio |
 
 ## 시스템 레이어 구조
 
