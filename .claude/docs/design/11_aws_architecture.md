@@ -25,7 +25,7 @@ ECS Fargate - WebSocket Service (단일 인스턴스)
     (Autonomous Behavior → Memory Retrieval →
      Emotion Analysis → Dialogue Planning →
      Message Generation → Memory Save)
-  - LLM Adapter (OpenAI / Anthropic / Google / Ollama)
+  - LLM Adapter (OpenAI)
   vCPU: 2-4 | Memory: 8-16 GB | Auto Scaling: 1-4 tasks
     │
     ├── RDS PostgreSQL + pgvector
@@ -53,7 +53,7 @@ ECS Fargate - WebSocket Service (단일 인스턴스)
           - 웹서칭 문서 처리 (S3 → 청킹 → 임베딩)
           vCPU: 1-2 | Memory: 4 GB | Auto Scaling: 1-3 tasks
 
-External LLM: OpenAI / Anthropic / Google Gemini / Ollama (Local)
+External LLM: OpenAI API
 
 Monitoring: CloudWatch Logs + Metrics + X-Ray (Tracing) + Secrets Manager
 ```
@@ -129,7 +129,7 @@ VPC (10.0.0.0/16)
 | CloudFront | 트래픽 기준 | $20 |
 | NAT Gateway | 데이터 전송 | $50 |
 | CloudWatch | 로그 + 메트릭 | $30 |
-| **LLM API** | **OpenAI + Anthropic** | **$2,000** |
+| **LLM API** | **OpenAI** | **$2,000** |
 | **합계** | | **$2,805** |
 
 LLM API가 전체 비용의 71% 차지. Redis/SQS 제거로 이전 대비 월 $425 절감.

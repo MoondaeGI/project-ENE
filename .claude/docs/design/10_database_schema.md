@@ -2,17 +2,19 @@
 
 PostgreSQL + pgvector 기반 전체 스키마입니다. `04_data_models.md`의 초기 설계보다 발전된 최신 버전입니다.
 
+사용자 이해 테이블 + ERD: [10_database_schema_user.md](10_database_schema_user.md)
+
 ## 주요 설계 결정
 
 | 항목 | 결정 | 이유 |
-|------|------|------|
+| --- | --- | --- |
 | UUID vs SERIAL | `participant`, `message`는 UUID / 나머지는 SERIAL | 외부 노출 최소화, INTEGER JOIN 성능 |
 | `memory_base` 패턴 | 모든 기억 객체의 공통 속성 통합 | Memory Evolution 통합 관리, 벡터 검색 단일화 |
 | `episode_message` 제거 | `message.episode_id` FK로 대체 | 중간 테이블 제거, 쿼리 단순화 |
 | `disclosure_weight` | 삭제 대신 가중치로 기억 억제 | 데이터 보존 + 출현도 제어 |
 | `user_portrait` 스냅샷 | `user_state_snapshot` + 매핑 테이블 | Portrait 재생성 시점 상태 추적 |
 
-## DDL
+## DDL — 핵심 테이블 (대화자·감정·메모리)
 
 ```sql
 -- Extensions
@@ -76,18 +78,14 @@ CREATE TABLE memory_base (
     id                 SERIAL PRIMARY KEY,
     owner_id           UUID REFERENCES participant(id) NOT NULL,
     memory_type        TEXT NOT NULL,  -- 'message', 'observation', 'episode', 'reflection'
-
-    -- Memory Evolution
     importance_score   FLOAT NOT NULL CHECK (importance_score BETWEEN 0 AND 1),
     memory_strength    FLOAT NOT NULL CHECK (memory_strength BETWEEN 0 AND 1),
     access_count       INTEGER DEFAULT 0 NOT NULL,
-
     -- Memory Suppression: 삭제 대신 disclosure_weight 낮춰 억제
     -- Retrieval Score = base_score * disclosure_weight
     disclosure_weight  FLOAT DEFAULT 1.0 NOT NULL CHECK (disclosure_weight BETWEEN 0 AND 1),
     suppressed         BOOLEAN DEFAULT FALSE NOT NULL,
     suppression_reason TEXT,  -- 'user_request' | 'sensitivity_high' | 'system'
-
     created_at         TIMESTAMP DEFAULT NOW() NOT NULL,
     last_accessed_at   TIMESTAMP DEFAULT NOW() NOT NULL,
     embedding          VECTOR(1536),  -- OpenAI ada-002
@@ -149,12 +147,12 @@ CREATE TABLE observation (
     memory_id             INTEGER REFERENCES memory_base(id) NOT NULL,
     content               TEXT NOT NULL,
     -- 감정 스냅샷 요약 지표 (쿼리/인덱스용)
-    emotional_valence     FLOAT CHECK (emotional_valence BETWEEN -1 AND 1),   -- 부정(-1) ~ 긍정(1)
-    emotional_arousal     FLOAT CHECK (emotional_arousal BETWEEN 0 AND 1),    -- 차분(0) ~ 격렬(1)
-    emotional_alignment   FLOAT CHECK (emotional_alignment BETWEEN 0 AND 1),  -- 사용자-AI 감정 일치도
+    emotional_valence     FLOAT CHECK (emotional_valence BETWEEN -1 AND 1),
+    emotional_arousal     FLOAT CHECK (emotional_arousal BETWEEN 0 AND 1),
+    emotional_alignment   FLOAT CHECK (emotional_alignment BETWEEN 0 AND 1),
     -- 상세 수치 (분석용)
     user_emotion_snapshot JSONB,  -- {"joy": 0.7, "sadness": 0.1, ...}
-    ai_emotion_snapshot   JSONB,  -- {"joy": 0.6, "interest": 0.7, ...}
+    ai_emotion_snapshot   JSONB,
     created_at            TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
@@ -191,132 +189,4 @@ CREATE TABLE memory_access_log (
 );
 
 CREATE INDEX memory_access_log_memory_idx ON memory_access_log(memory_id, accessed_at DESC);
-
--- ============================================================
--- 4. 사용자 이해 (User Understanding)
--- ============================================================
-
-CREATE TABLE user_portrait (
-    id                  SERIAL PRIMARY KEY,
-    user_id             UUID REFERENCES participant(id) UNIQUE NOT NULL,
-    personality_summary TEXT,
-    communication_style TEXT,
-    confidence_score    FLOAT DEFAULT 0.5 NOT NULL CHECK (confidence_score BETWEEN 0 AND 1),
-    created_at          TIMESTAMP DEFAULT NOW() NOT NULL,
-    last_updated        TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
-CREATE INDEX user_portrait_user_idx ON user_portrait(user_id);
-
-CREATE TABLE user_trait (
-    id          SERIAL PRIMARY KEY,
-    portrait_id INTEGER REFERENCES user_portrait(id) ON DELETE CASCADE NOT NULL,
-    trait_name  TEXT NOT NULL,  -- 'curious', 'analytical', 'creative', etc.
-    trait_value FLOAT NOT NULL CHECK (trait_value BETWEEN -1 AND 1),
-    confidence  FLOAT DEFAULT 0.5 NOT NULL CHECK (confidence BETWEEN -1 AND 1),
-    updated_at  TIMESTAMP DEFAULT NOW() NOT NULL,
-    UNIQUE(portrait_id, trait_name)
-);
-
-CREATE INDEX user_trait_portrait_idx ON user_trait(portrait_id);
-CREATE INDEX user_trait_active_idx ON user_trait(portrait_id, confidence);
-
-CREATE TABLE user_interest (
-    id              SERIAL PRIMARY KEY,
-    user_id         UUID REFERENCES participant(id) NOT NULL,
-    topic           TEXT NOT NULL,
-    confidence      FLOAT NOT NULL CHECK (confidence BETWEEN -1 AND 1),  -- 양수: 관심, 음수: 기피
-    frequency       INTEGER DEFAULT 1 NOT NULL,
-    first_mentioned TIMESTAMP NOT NULL,
-    last_mentioned  TIMESTAMP NOT NULL,
-    UNIQUE(user_id, topic)
-);
-
-CREATE INDEX user_interest_user_idx ON user_interest(user_id, confidence DESC);
-CREATE INDEX user_interest_topic_idx ON user_interest(topic);
-
-CREATE TABLE user_preference (
-    id               SERIAL PRIMARY KEY,
-    user_id          UUID REFERENCES participant(id) NOT NULL,
-    preference_type  TEXT NOT NULL,  -- 'response_length', 'formality', 'humor', etc.
-    preference_value TEXT NOT NULL,
-    confidence       FLOAT DEFAULT 0.5 NOT NULL CHECK (confidence BETWEEN -1 AND 1),
-    updated_at       TIMESTAMP DEFAULT NOW() NOT NULL,
-    UNIQUE(user_id, preference_type)
-);
-
-CREATE INDEX user_preference_user_idx ON user_preference(user_id);
-
--- user_portrait 재생성 시점마다 전체 상태 스냅샷 기록
-CREATE TABLE user_state_snapshot (
-    id               SERIAL PRIMARY KEY,
-    user_id          UUID REFERENCES participant(id) NOT NULL,
-    user_portrait_id INTEGER REFERENCES user_portrait(id) NOT NULL,
-    created_at       TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
-CREATE INDEX user_state_snapshot_user_idx ON user_state_snapshot(user_id, created_at DESC);
-
-CREATE TABLE snapshot_interest (
-    snapshot_id INTEGER REFERENCES user_state_snapshot(id) ON DELETE CASCADE,
-    interest_id INTEGER REFERENCES user_interest(id) ON DELETE CASCADE,
-    PRIMARY KEY (snapshot_id, interest_id)
-);
-
-CREATE TABLE snapshot_trait (
-    snapshot_id INTEGER REFERENCES user_state_snapshot(id) ON DELETE CASCADE,
-    trait_id    INTEGER REFERENCES user_trait(id) ON DELETE CASCADE,
-    PRIMARY KEY (snapshot_id, trait_id)
-);
-
-CREATE TABLE snapshot_preference (
-    snapshot_id   INTEGER REFERENCES user_state_snapshot(id) ON DELETE CASCADE,
-    preference_id INTEGER REFERENCES user_preference(id) ON DELETE CASCADE,
-    PRIMARY KEY (snapshot_id, preference_id)
-);
-
--- ============================================================
--- 초기 데이터
--- ============================================================
-
-INSERT INTO participant (type, name, profile)
-VALUES ('AI_CHARACTER', 'ENE', 'A thoughtful AI companion who remembers and understands');
-
-INSERT INTO character_state (character_id, conversation_mode)
-SELECT id, 'casual' FROM participant WHERE type = 'AI_CHARACTER';
-```
-
-## ERD (Mermaid)
-
-```mermaid
-erDiagram
-    participant ||--o{ message : "sends"
-    participant ||--o{ memory_base : "owns"
-    participant ||--|| character_state : "has"
-    participant ||--o{ emotion_history : "has"
-    participant ||--|| user_portrait : "has"
-    participant ||--o{ user_interest : "has"
-    participant ||--o{ user_preference : "has"
-    participant ||--o{ user_state_snapshot : "has"
-
-    memory_base ||--o| message : "represents"
-    memory_base ||--o{ observation : "represents"
-    memory_base ||--o| episode : "represents"
-    memory_base ||--o| reflection : "represents"
-    memory_base ||--o{ memory_access_log : "tracked_by"
-    memory_base ||--o{ reflection_source : "source_of"
-
-    message }o--|| episode : "belongs_to"
-    message ||--o{ emotion_history : "triggers"
-    episode ||--o{ message : "contains"
-
-    reflection ||--o{ reflection : "parent_of"
-    reflection ||--o{ reflection_source : "derived_from"
-
-    user_portrait ||--o{ user_trait : "has"
-    user_portrait ||--o{ user_state_snapshot : "captured_in"
-
-    user_state_snapshot ||--o{ snapshot_interest : "includes"
-    user_state_snapshot ||--o{ snapshot_trait : "includes"
-    user_state_snapshot ||--o{ snapshot_preference : "includes"
 ```

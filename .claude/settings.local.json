@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l c:/Users/MoonDaeGI/project/security_dict/.claude/docs/**/*.md c:/Users/MoonDaeGI/project/security_dict/.claude/docs/*.md)"
+    ]
+  },
+  "model": "sonnat",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/run_tests_on_save.sh",
+            "timeout": 60,
+            "statusMessage": "Running unit tests..."
+          }
+        ]
+      }
+    ]
+  }
+}

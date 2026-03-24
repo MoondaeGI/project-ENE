@@ -4,9 +4,9 @@
 
 Strategy 패턴을 사용하여 다양한 LLM 제공자를 추상화합니다. 런타임에 LLM 제공자를 동적으로 전환할 수 있습니다.
 
-**지원 제공자**:
-- Cloud: OpenAI, Anthropic, Google Gemini
-- Local: Ollama, LM Studio, LocalAI
+**현재 구현된 제공자**: OpenAI (기본)
+
+**추후 추가 예정**: Anthropic, Google Gemini, Ollama, LM Studio, LocalAI
 
 ## LLMProvider 프로토콜
 
@@ -47,14 +47,14 @@ class LLMAdapter:
 ```python
 adapter = LLMAdapter()
 adapter.register_provider("openai", OpenAIProvider(api_key=...))
-adapter.register_provider("ollama", OllamaProvider(base_url=...))
 adapter.set_default_provider("openai")
 
 # 기본 제공자 사용
 response = await adapter.generate("Hello")
 
-# 특정 제공자 지정
-response = await adapter.generate("Hello", provider="ollama")
+# 추후: 다른 provider 등록 시 기존 코드 변경 없이 사용 가능
+# adapter.register_provider("anthropic", AnthropicProvider(api_key=...))
+# response = await adapter.generate("Hello", provider="anthropic")
 ```
 
 ## 에러 처리

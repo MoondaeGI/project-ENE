@@ -1,8 +1,10 @@
 # Project Directory Structure
 
+코드 예시: [09_project_structure_examples.md](09_project_structure_examples.md)
+
 ## Directory Structure
 
-```
+```text
 ai-character-chat-system/
 ├── src/
 │   ├── api/                          # API Layer (FastAPI)
@@ -53,9 +55,9 @@ ai-character-chat-system/
 │   │       ├── providers/
 │   │       │   ├── base.py           # 추상 인터페이스
 │   │       │   ├── openai_provider.py
-│   │       │   ├── anthropic_provider.py
-│   │       │   ├── google_provider.py
-│   │       │   └── ollama_provider.py
+│   │       │   ├── anthropic_provider.py  # 추후 추가 예정
+│   │       │   ├── google_provider.py     # 추후 추가 예정
+│   │       │   └── ollama_provider.py     # 추후 추가 예정
 │   │       └── prompts/              # 프롬프트 템플릿
 │   │           ├── character_persona.py
 │   │           ├── emotion_analysis.py
@@ -142,97 +144,12 @@ ai-character-chat-system/
 
 ## Layer별 책임
 
-| Layer      | 경로              | 책임                                        |
-| ---------- | ----------------- | ------------------------------------------- |
-| API        | `src/api/`        | HTTP/WebSocket 엔드포인트, 인증, 요청 검증  |
-| Workflow   | `src/workflow/`   | LangGraph 대화 흐름 제어, 노드 간 상태 전달 |
-| Services   | `src/services/`   | 핵심 비즈니스 로직, 도메인 규칙 적용        |
-| Models     | `src/models/`     | 데이터 구조 정의, Pydantic 유효성 검증      |
-| Database   | `src/database/`   | DB 연결 관리, Repository 패턴, 마이그레이션 |
-| Core       | `src/core/`       | 설정, 로깅, 커스텀 예외, 공통 유틸리티      |
-| Background | `src/background/` | 주기적 작업 (망각 곡선, Portrait 업데이트)  |
-
-## 주요 파일 예시
-
-### `src/api/main.py`
-
-```python
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from src.api.routes import health, users, admin
-from src.api.websocket import websocket_endpoint
-from src.core.config import settings
-
-app = FastAPI(title="AI Character Chat System", version="1.0.0")
-
-app.add_middleware(CORSMiddleware, allow_origins=settings.CORS_ORIGINS,
-                   allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(users.router, prefix="/api/users", tags=["users"])
-app.add_websocket_route("/ws/{user_id}", websocket_endpoint)
-
-@app.on_event("startup")
-async def startup_event():
-    from src.database.connection import init_db
-    from src.background.scheduler import start_scheduler
-    await init_db()
-    start_scheduler()
-```
-
-### `src/workflow/main_workflow.py`
-
-```python
-from langgraph.graph import StateGraph, END
-from src.workflow.state import ConversationState
-
-def create_main_workflow():
-    workflow = StateGraph(ConversationState)
-
-    workflow.add_node("autonomous_behavior", autonomous_behavior.node)
-    workflow.add_node("memory_retrieval", memory_retrieval.node)
-    workflow.add_node("emotion_analysis", emotion_analysis.create_subgraph())
-    workflow.add_node("dialogue_planning", dialogue_planning.node)
-    workflow.add_node("message_generation", message_generation.node)
-    workflow.add_node("memory_save", memory_save.create_subgraph())
-
-    workflow.set_entry_point("autonomous_behavior")
-    workflow.add_conditional_edges(
-        "autonomous_behavior",
-        lambda state: "respond" if state["should_respond"] else "silence",
-        {"respond": "memory_retrieval", "silence": END}
-    )
-    workflow.add_edge("memory_retrieval", "emotion_analysis")
-    workflow.add_edge("emotion_analysis", "dialogue_planning")
-    workflow.add_edge("dialogue_planning", "message_generation")
-    workflow.add_edge("message_generation", "memory_save")
-    workflow.add_edge("memory_save", END)
-
-    return workflow.compile()
-
-app = create_main_workflow()
-```
-
-### `src/core/config.py`
-
-```python
-from pydantic_settings import BaseSettings
-from typing import List
-
-class Settings(BaseSettings):
-    DATABASE_URL: str
-    OPENAI_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""
-    DEFAULT_LLM_PROVIDER: str = "openai"
-    EMBEDDING_MODEL: str = "text-embedding-ada-002"
-    EMBEDDING_DIMENSION: int = 1536
-    MEMORY_DECAY_RATE: float = 0.01
-    REFLECTION_THRESHOLD: float = 10.0
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
-```
+| Layer | 경로 | 책임 |
+| --- | --- | --- |
+| API | `src/api/` | HTTP/WebSocket 엔드포인트, 인증, 요청 검증 |
+| Workflow | `src/workflow/` | LangGraph 대화 흐름 제어, 노드 간 상태 전달 |
+| Services | `src/services/` | 핵심 비즈니스 로직, 도메인 규칙 적용 |
+| Models | `src/models/` | 데이터 구조 정의, Pydantic 유효성 검증 |
+| Database | `src/database/` | DB 연결 관리, Repository 패턴, 마이그레이션 |
+| Core | `src/core/` | 설정, 로깅, 커스텀 예외, 공통 유틸리티 |
+| Background | `src/background/` | 주기적 작업 (망각 곡선, Portrait 업데이트) |

@@ -1,43 +1,57 @@
-# Skills & Slash Commands
+# Tools Reference
 
-이 프로젝트에서 사용할 수 있는 Claude Code 슬래시 커맨드 목록입니다.
-모든 커맨드 정의는 `.claude/commands/` 에 있습니다.
+이 프로젝트에서 사용하는 MCP 서버 및 CLI 도구 목록입니다.
 
-## 구현 워크플로우
+## MCP 서버
 
-| 커맨드 | 설명 | 사용 예 |
-|--------|------|---------|
-| `/check-requirements <번호\|키워드>` | 요구사항 및 설계 명세 확인 | `/check-requirements memory` |
-| `/implement-task <번호>` | tasks.md 기반 태스크 구현 | `/implement-task 2.1` |
-| `/test-feature <경로\|함수명>` | 테스트 코드 작성 및 실행 | `/test-feature MemoryService` |
-| `/memory-pattern` | Memory Stream 핵심 코드 패턴 참조 | `/memory-pattern` |
+| 이름 | 용도 |
+|------|------|
+| `postgres` | PostgreSQL 직접 쿼리 — 스키마 확인, 데이터 조회, 마이그레이션 검증 |
+| `filesystem` | 프로젝트 파일 읽기/쓰기 |
+| `github` | PR, 이슈, 코드 리뷰 관리 |
+| `obsidian` | Obsidian vault 노트 읽기/쓰기 — `.claude/docs/` 동기화에 사용 |
 
-## 문서 & 동기화
+## CLI 도구
 
-| 커맨드 | 설명 | 사용 예 |
-|--------|------|---------|
-| `/obsidian-sync` | `.claude/docs/` → Obsidian vault 동기화 | `/obsidian-sync` |
-| `/obsidian-sync <파일>` | 특정 문서만 동기화 | `/obsidian-sync design/02_agents` |
+### 개발
 
-## 권장 추가 커맨드 (미구현)
+| 커맨드 | 용도 | 예시 |
+|--------|------|------|
+| `alembic` | DB 마이그레이션 생성 및 적용 | `alembic revision --autogenerate -m "add index"` |
+| `uvicorn` | FastAPI 개발 서버 실행 | `uvicorn src.api.main:app --reload` |
+| `pytest` | 테스트 실행 | `pytest tests/unit/ -v --cov=src` |
+| `psql` | PostgreSQL 직접 접속 | `psql $DATABASE_URL` |
 
-아래 커맨드가 있으면 유용합니다. 필요 시 추가 요청하세요.
+### 인프라 & 배포
 
-| 커맨드 | 설명 |
-|--------|------|
-| `/check-arch` | 의존성 방향(`api → workflow → services → database`) 위반 검사 |
-| `/new-provider <이름>` | LLM Provider 플러그인 스캐폴드 자동 생성 |
-| `/db-migrate <설명>` | Alembic 마이그레이션 생성 + 적용 + 검증 |
-| `/memory-trace <memory_id>` | 기억 객체 생애주기(Message → Portrait) 추적 디버그 |
+| 커맨드 | 용도 | 예시 |
+|--------|------|------|
+| `docker compose` | 로컬 DB/서비스 실행 | `docker compose up -d postgres` |
+| `aws` | AWS 리소스 관리 | `aws ecs deploy ...` |
 
-## 자동화 Hooks
+### 테스트
 
-파일 수정 시 자동으로 동작을 트리거하려면 hooks를 설정하세요:
+| 라이브러리 | 용도 |
+|-----------|------|
+| `pytest` | 테스트 러너 |
+| `pytest-asyncio` | `async/await` 테스트 지원 (`asyncio_mode = "auto"`) |
+| `pytest-cov` | 커버리지 측정 (`--cov=src --cov-report=term-missing`) |
+| `testcontainers` | 통합 테스트용 실제 PostgreSQL 컨테이너 실행 |
+| `httpx` | FastAPI 비동기 테스트 클라이언트 (`AsyncClient`) |
 
+```bash
+# 단위 테스트
+pytest tests/unit/ -v
+
+# 커버리지 포함
+pytest tests/unit/ --cov=src --cov-report=term-missing -v
+
+# 통합 테스트
+pytest tests/integration/ -v --timeout=30
 ```
-/update-config
-```
 
-추천 hook 구성:
-- **obsidian 자동 sync**: `.claude/docs/` 내 `.md` 수정 후 → `obsidian-sync.sh` 실행
-- **테스트 자동 실행**: `src/` 내 `.py` 수정 후 → 관련 unit test 자동 실행
+### 문서
+
+| 커맨드 | 용도 | 예시 |
+|--------|------|------|
+| `obsidian-git` | Obsidian vault git 동기화 | vault 내부에서 자동 실행 |

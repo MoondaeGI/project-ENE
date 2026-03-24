@@ -40,7 +40,7 @@ docker-compose up --build
 | LLM Integration | LangChain                                           |
 | Database        | PostgreSQL + pgvector                               |
 | Deployment      | AWS Cloud                                           |
-| LLM Providers   | OpenAI, Anthropic, Google Gemini, Ollama, LM Studio |
+| LLM Providers   | OpenAI (현재) / 추후: Anthropic, Gemini, Ollama      |
 
 ## 시스템 레이어 구조
 
