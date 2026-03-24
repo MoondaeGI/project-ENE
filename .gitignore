@@ -1,6 +1,13 @@
 
+#setting 
 .vscode
 .idea
 .kiro
 
+#env
 .env
+
+#claude
+.claude
+CLAUDE.md
+SKILLS.md
