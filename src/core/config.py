@@ -5,23 +5,17 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DATABASE_", env_file=".env", extra="ignore")
 
-    url: str = Field(
-        default="postgresql+asyncpg://user:password@localhost:5432/ai_character_chat",
-        description="Async database URL for SQLAlchemy",
-    )
-    sync_url: str = Field(
-        default="postgresql+psycopg2://user:password@localhost:5432/ai_character_chat",
-        description="Sync database URL for Alembic migrations",
-    )
-    pool_size: int = Field(default=10, ge=1, le=100)
-    max_overflow: int = Field(default=20, ge=0, le=100)
+    url: str = Field(description="Async database URL for SQLAlchemy")
+    sync_url: str = Field(description="Sync database URL for Alembic migrations")
+    pool_size: int = Field(default=5, ge=1, le=100)
+    max_overflow: int = Field(default=10, ge=0, le=100)
     pool_timeout: int = Field(default=30, ge=1)
 
 
@@ -31,27 +25,19 @@ class LLMSettings(BaseSettings):
     default_llm_provider: str = Field(default="openai")
 
     # OpenAI
-    openai_api_key: str = Field(default="")
+    openai_api_key: str = Field(description="OpenAI API key")
     openai_model: str = Field(default="gpt-4o")
     openai_embedding_model: str = Field(default="text-embedding-3-small")
 
-    # Anthropic
-    anthropic_api_key: str = Field(default="")
-    anthropic_model: str = Field(default="claude-sonnet-4-5")
-
-    # Google
-    google_api_key: str = Field(default="")
-    google_model: str = Field(default="gemini-1.5-pro")
-
-    # Ollama
+    # Ollama (local — no API key required)
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="llama3")
 
-    # LM Studio
+    # LM Studio (local — no API key required)
     lm_studio_base_url: str = Field(default="http://localhost:1234/v1")
     lm_studio_model: str = Field(default="local-model")
 
-    # LocalAI
+    # LocalAI (local — no API key required)
     local_ai_base_url: str = Field(default="http://localhost:8080/v1")
     local_ai_model: str = Field(default="gpt-3.5-turbo")
 
@@ -92,7 +78,7 @@ class AppSettings(BaseSettings):
     app_host: str = Field(default="0.0.0.0")
     app_port: int = Field(default=8000, ge=1, le=65535)
     app_debug: bool = Field(default=False)
-    secret_key: str = Field(default="change-me-in-production")
+    secret_key: str = Field(description="Secret key for token signing")
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(default="INFO")
     log_format: Literal["json", "text"] = Field(default="json")
@@ -112,6 +98,17 @@ class Settings(BaseSettings):
 
 
 @lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    """Return cached application settings."""
+def _load_settings() -> Settings:
     return Settings()
+
+
+def get_settings() -> Settings:
+    """Return cached application settings. Exits with a clear message on missing env vars."""
+    try:
+        return _load_settings()
+    except ValidationError as e:
+        lines = ["[Config Error] Missing or invalid environment variables:"]
+        for err in e.errors():
+            loc = " > ".join(str(part) for part in err["loc"])
+            lines.append(f"  - {loc}: {err['msg']}")
+        raise SystemExit("\n".join(lines))
