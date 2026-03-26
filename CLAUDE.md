@@ -135,3 +135,53 @@ async def retrieve_memories(
 - 벡터 검색 실패 시 tag 기반 keyword 검색으로 fallback
 - LLM 호출 실패 시 다른 Provider로 자동 전환, 최대 3회 재시도
 - Portrait 업데이트 실패 시 이전 Portrait 유지 (무중단)
+
+### Python 코드 스타일
+
+**Typing**
+- 모든 함수에 파라미터와 반환값 타입 명시 필수
+- 파라미터 4개 이상이면 dataclass 또는 TypedDict로 묶기
+- `Any` 타입 사용 금지
+
+**Docstring**
+- 모든 public 함수/클래스에 docstring 필수
+- Google 스타일 사용
+
+**API**
+- 엔드포인트 구현 전 Pydantic validator 먼저 작성
+
+**예외 처리**
+- bare `except:` 금지, 반드시 예외 타입 명시
+- 커스텀 예외는 프로젝트 루트 `exceptions.py`에 정의
+
+**함수 설계**
+- 함수 하나는 하나의 역할만 (20줄 초과 시 분리 검토)
+- 사이드 이펙트 있는 함수는 이름에 동사로 명시 (`save_`, `send_`, `delete_`)
+
+**임포트**
+- 상대 임포트 금지, 절대 경로만 사용
+- 외부 라이브러리 → 내부 모듈 → 로컬 모듈 순서로 그룹핑
+
+**상수**
+- 매직 넘버 금지, 반드시 상수로 정의
+
+### Git 컨벤션
+
+**커밋 메시지**
+- Prefix는 `YYMMDD` 형식 날짜 (ex: `260326 Init project`)
+- 동사를 앞에 배치 (ex: `260326 Change database/init.py function`)
+- 커밋은 최대한 작은 단위로 잘라서
+
+**Push 규칙**
+- `master` 브랜치 직접 push **절대 금지**
+- Push 시 issue에 변경점 명시 필수
+- Push 조건: 사용자 명시적 요청 **또는** 기능 완성 + 테스트 통과 후
+
+### 테스트 규칙
+
+- Service layer 단위테스트 필수: 성공 케이스 1회 + 엣지 케이스 존재 시 1회
+- DB 테스트는 단위테스트에서 mock 허용
+
+### 보안 추가 규칙
+
+- 민감한 문자열(시크릿, API 키 등) 생성·추가가 필요하면 구현 전 반드시 사용자에게 먼저 요청
