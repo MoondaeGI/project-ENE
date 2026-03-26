@@ -1,6 +1,8 @@
-
+#settings
 .vscode
 .idea
 .kiro
-
+# env
 .env
+#claude
+.mcp.json

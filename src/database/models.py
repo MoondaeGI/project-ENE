@@ -127,7 +127,7 @@ class MemoryBase(Base):
     )
 
     embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    extra_metadata: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB)
 
     # Relationships
     owner: Mapped[Participant] = relationship("Participant", back_populates="memory_bases")
