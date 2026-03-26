@@ -176,6 +176,7 @@ async def retrieve_memories(
 - `master` 브랜치 직접 push **절대 금지**
 - Push 시 issue에 변경점 명시 필수
 - Push 조건: 사용자 명시적 요청 **또는** 기능 완성 + 테스트 통과 후
+- Push 전 반드시 사용자 허락 필수 — 커밋마다 자동 push 금지
 
 ### 테스트 규칙
 
