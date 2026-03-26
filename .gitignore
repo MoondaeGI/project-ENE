@@ -6,3 +6,4 @@
 .env
 #claude
 .mcp.json
+.claude/settings.local.json
