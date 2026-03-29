@@ -52,6 +52,7 @@ dev = [
     "httpx>=0.27.0",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
+    "poethepoet>=0.25.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -72,3 +73,27 @@ target-version = "py311"
 python_version = "3.11"
 strict = false
 ignore_missing_imports = true
+
+[tool.poe.tasks]
+# Docker
+dev-up    = "docker compose -f docker/docker-compose.dev.yml up -d"
+dev-down  = "docker compose -f docker/docker-compose.dev.yml down"
+dev-clean = "docker compose -f docker/docker-compose.dev.yml down -v"
+
+# DB
+rollback  = "python -m alembic downgrade -1"
+
+# App
+dev       = "uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000"
+
+# Quality
+test      = "pytest"
+lint      = "ruff check src tests"
+typecheck = "mypy src"
+
+[tool.poe.tasks.migrate]
+sequence = [
+  {cmd = "docker compose -f docker/docker-compose.dev.yml up -d"},
+  {cmd = "docker compose -f docker/docker-compose.dev.yml wait db"},
+  {cmd = "python -m alembic upgrade head"},
+]

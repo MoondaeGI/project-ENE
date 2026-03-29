@@ -5,18 +5,33 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, ValidationError, field_validator
+from pydantic import Field, ValidationError, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="DATABASE_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="POSTGRES_", env_file=".env", extra="ignore")
 
-    url: str = Field(description="Async database URL for SQLAlchemy")
-    sync_url: str = Field(description="Sync database URL for Alembic migrations")
+    user: str = Field(description="PostgreSQL username")
+    password: str = Field(description="PostgreSQL password")
+    db: str = Field(description="PostgreSQL database name")
+    host: str = Field(default="localhost", description="PostgreSQL host")
+    port: int = Field(default=5432, description="PostgreSQL port")
     pool_size: int = Field(default=5, ge=1, le=100)
     max_overflow: int = Field(default=10, ge=0, le=100)
     pool_timeout: int = Field(default=30, ge=1)
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        """Async database URL for SQLAlchemy."""
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
+
+    @computed_field
+    @property
+    def sync_url(self) -> str:
+        """Sync database URL for Alembic migrations."""
+        return f"postgresql+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
 
 
 class LLMSettings(BaseSettings):
