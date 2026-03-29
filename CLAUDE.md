@@ -54,10 +54,3 @@ core (모든 레이어), background → services → database
 | [design/10_database_schema_user.md](.claude/docs/design/10_database_schema_user.md) | DDL 최신 (사용자 이해 테이블) + ERD |
 | [design/11_aws_architecture.md](.claude/docs/design/11_aws_architecture.md) | AWS 배포 아키텍처, 비용, 확장 포인트 |
 
-## 코딩 가이드라인
-
-@.claude/rules/code-style.md
-
-## Git & 테스트
-
-@.claude/rules/git-convention.md
