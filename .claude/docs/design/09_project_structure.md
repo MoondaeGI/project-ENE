@@ -15,6 +15,9 @@ ai-character-chat-system/
 │   │   │   ├── health.py             # 헬스체크
 │   │   │   ├── users.py              # 사용자 관리
 │   │   │   └── admin.py              # 관리자 API
+│   │   ├── dto/                      # HTTP request/response DTO
+│   │   │   ├── request/
+│   │   │   └── response/
 │   │   ├── middleware/
 │   │   │   ├── auth.py               # 인증
 │   │   │   ├── cors.py               # CORS
@@ -35,6 +38,10 @@ ai-character-chat-system/
 │   │       └── memory_save.py
 │   │
 │   ├── services/                     # Business Logic Layer
+│   │   ├── dto/                      # Service ↔ Controller DTO
+│   │   │   ├── memory.py
+│   │   │   ├── conversation.py
+│   │   │   └── emotion.py
 │   │   ├── memory/
 │   │   │   ├── memory_stream.py      # Memory Stream 관리
 │   │   │   ├── retrieval_engine.py   # 검색 엔진
@@ -63,20 +70,13 @@ ai-character-chat-system/
 │   │           ├── emotion_analysis.py
 │   │           └── reflection.py
 │   │
-│   ├── models/                       # Data Models
-│   │   ├── domain/                   # 도메인 모델
-│   │   │   ├── participant.py
-│   │   │   ├── message.py
-│   │   │   ├── memory.py
-│   │   │   ├── emotion.py
-│   │   │   └── portrait.py
-│   │   └── dto/                      # Data Transfer Objects
-│   │       ├── request.py
-│   │       └── response.py
-│   │
 │   ├── database/                     # Data Layer
 │   │   ├── connection.py             # DB 연결 관리
 │   │   ├── models.py                 # SQLAlchemy ORM 모델
+│   │   ├── dto/                      # DAO ↔ Service DTO
+│   │   │   ├── memory.py
+│   │   │   ├── participant.py
+│   │   │   └── message.py
 │   │   ├── repositories/             # Repository 패턴
 │   │   │   ├── base.py
 │   │   │   ├── participant_repo.py
@@ -146,10 +146,9 @@ ai-character-chat-system/
 
 | Layer | 경로 | 책임 |
 | --- | --- | --- |
-| API | `src/api/` | HTTP/WebSocket 엔드포인트, 인증, 요청 검증 |
+| API | `src/api/` | HTTP/WebSocket 엔드포인트, 인증, 요청 검증, HTTP DTO |
 | Workflow | `src/workflow/` | LangGraph 대화 흐름 제어, 노드 간 상태 전달 |
-| Services | `src/services/` | 핵심 비즈니스 로직, 도메인 규칙 적용 |
-| Models | `src/models/` | 데이터 구조 정의, Pydantic 유효성 검증 |
-| Database | `src/database/` | DB 연결 관리, Repository 패턴, 마이그레이션 |
+| Services | `src/services/` | 핵심 비즈니스 로직, 도메인 규칙 적용, Service↔Controller DTO |
+| Database | `src/database/` | SQLAlchemy ORM, Repository 패턴, 마이그레이션, DAO↔Service DTO |
 | Core | `src/core/` | 설정, 로깅, 커스텀 예외, 공통 유틸리티 |
 | Background | `src/background/` | 주기적 작업 (망각 곡선, Portrait 업데이트) |
