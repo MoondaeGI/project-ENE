@@ -36,6 +36,19 @@ async def retrieve_memories(
     ...
 ```
 
+## DTO 규칙
+
+레이어 간 데이터 이동은 반드시 해당 레이어의 DTO를 사용한다.
+
+| 이동 구간 | DTO 위치 |
+| --- | --- |
+| HTTP 요청/응답 (client ↔ controller) | `api/dto/request/`, `api/dto/response/` |
+| Controller ↔ Service | `services/dto/` |
+| Service ↔ DAO (Repository) | `database/dto/` |
+
+- ORM 모델(`database/models.py`)을 서비스 레이어 밖으로 노출 금지
+- 각 레이어는 인접 레이어의 DTO만 참조 (건너뛰기 금지)
+
 ## Python 코드 스타일
 
 **Typing**
