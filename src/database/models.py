@@ -65,7 +65,7 @@ class Participant(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type: Mapped[ParticipantType] = mapped_column(
-        Enum(ParticipantType, name="participant_type"), nullable=False
+        Enum(ParticipantType, name="participant_type", create_type=False), nullable=False
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     profile: Mapped[str | None] = mapped_column(Text)
@@ -242,7 +242,7 @@ class Episode(Base):
     turning_point: Mapped[str | None] = mapped_column(Text)
     conclusion: Mapped[str | None] = mapped_column(Text)
     status: Mapped[EpisodeStatus] = mapped_column(
-        Enum(EpisodeStatus, name="episode_status"),
+        Enum(EpisodeStatus, name="episode_status", create_type=False),
         default=EpisodeStatus.ONGOING,
         nullable=False,
     )

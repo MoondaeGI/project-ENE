@@ -24,12 +24,18 @@ def upgrade() -> None:
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
 
     # Enums
-    postgresql.ENUM("HUMAN", "AI_CHARACTER", name="participant_type", create_type=False).create(
-        op.get_bind(), checkfirst=True
-    )
-    postgresql.ENUM("ONGOING", "COMPLETED", name="episode_status", create_type=False).create(
-        op.get_bind(), checkfirst=True
-    )
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE participant_type AS ENUM ('HUMAN', 'AI_CHARACTER');
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE episode_status AS ENUM ('ONGOING', 'COMPLETED');
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
+    """)
 
     # 1. participant
     op.create_table(
@@ -41,7 +47,9 @@ def upgrade() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column(
-            "type", sa.Enum("HUMAN", "AI_CHARACTER", name="participant_type"), nullable=False
+            "type",
+            postgresql.ENUM(name="participant_type", create_type=False),
+            nullable=False,
         ),
         sa.Column("name", sa.Text(), nullable=False),
         sa.Column("profile", sa.Text(), nullable=True),
@@ -98,7 +106,7 @@ def upgrade() -> None:
         sa.Column("conclusion", sa.Text(), nullable=True),
         sa.Column(
             "status",
-            sa.Enum("ONGOING", "COMPLETED", name="episode_status"),
+            postgresql.ENUM(name="episode_status", create_type=False),
             nullable=False,
             server_default="ONGOING",
         ),

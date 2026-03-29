@@ -79,6 +79,7 @@ ignore_missing_imports = true
 dev-up    = "docker compose -f docker/docker-compose.dev.yml up -d"
 dev-down  = "docker compose -f docker/docker-compose.dev.yml down"
 dev-clean = "docker compose -f docker/docker-compose.dev.yml down -v"
+dev-reset = { sequence = ["dev-clean", "migrate"] }
 
 # DB
 rollback  = "python -m alembic downgrade -1"
@@ -93,7 +94,6 @@ typecheck = "mypy src"
 
 [tool.poe.tasks.migrate]
 sequence = [
-  {cmd = "docker compose -f docker/docker-compose.dev.yml up -d"},
-  {cmd = "docker compose -f docker/docker-compose.dev.yml wait db"},
+  {cmd = "docker compose -f docker/docker-compose.dev.yml up -d --wait"},
   {cmd = "python -m alembic upgrade head"},
 ]

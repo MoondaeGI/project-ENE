@@ -11,15 +11,11 @@ Bottom-up 구현 순서: 기반 인프라(DB, LLM 추상화) → 핵심 메모�
 
 - [-] 1. Set up project infrastructure and directory structure
   - [x] 1.0 기본 디렉터리 구조 생성 및 파일 마이그레이션 (완료)
-  - [-] 1.1 Set up Alembic migration system
-    - Run `alembic init src/database/migrations/`
-    - Configure `env.py` to use async engine
-    - Create initial migration for all tables with HNSW vector indexes
+  - [x] 1.1 Set up Alembic migration system
     - _Requirements: 11.5, 11.6_
-  - [ ] 1.2 Create utility scripts and config files
-    - `scripts/setup_db.py` (pgvector 확장 초기화 + 마이그레이션)
-    - `scripts/seed_data.py` (초기 캐릭터 데이터)
-    - `config/development.yaml`, `config/production.yaml`, `config/test.yaml`
+  - [x] 1.2 Create utility scripts and config files
+    - ~~`scripts/setup_db.py`~~ → `poe dev-reset`으로 대체
+    - seed_data → 별도 Alembic migration으로 추가 예정
     - `tests/conftest.py` (shared fixtures: async DB session, test client)
     - _Requirements: 11.5, 11.8_
   - [ ]* 1.3 Write unit tests for database connection and schema validation
